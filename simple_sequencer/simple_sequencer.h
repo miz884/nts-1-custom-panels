@@ -1,0 +1,6 @@
+#ifndef _SIMPLE_SEQUENCER_H
+#define _SIMPLE_SEQUENCER_H
+
+#define PRESCALER_FACTOR 1
+
+#endif
