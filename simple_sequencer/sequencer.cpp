@@ -65,7 +65,7 @@ void seq_timer_handler(HardwareTimer *timer) {
     return;
   }
 
-  const uint32_t us_per_tick = SEQ_MIN_US / (seq_config.tempo / 10 * SEQ_TICKS_PER_STEP);
+  const uint32_t us_per_tick = SEQ_MIN_US / ((seq_config.tempo / 10) * SEQ_TICKS_PER_STEP);
   const uint32_t us_since_last_tick = now_us - seq_state.last_tick_us;
   if (us_since_last_tick >= us_per_tick) {
     // Next tick.

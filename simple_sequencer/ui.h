@@ -3,6 +3,16 @@
 
 #include "Arduino.h"
 
+typedef struct ui_state {
+  uint16_t mode;
+  uint16_t submode;
+  uint16_t sw_pressed;
+  uint16_t sw_long_pressed;
+  uint32_t vr_value;
+} ui_state_t;
+
+extern ui_state_t ui_state;
+
 enum {
   UI_MODE_PLAY = 0,
   UI_MODE_SEQ_EDIT,
@@ -32,11 +42,6 @@ enum {
   sw8,
   sw9,
   sw_count
-};
-
-enum {
-  sw_play = sw8,
-  sw_shift = sw9
 };
 
 const uint8_t sw_pins[sw_count] = {
@@ -85,16 +90,6 @@ enum {
 const uint8_t vr_pins[vr_count] = {
   A10
 };
-
-typedef struct ui_state {
-  uint16_t mode;
-  uint16_t submode;
-  uint16_t sw_pressed;
-  uint16_t sw_long_pressed;
-  uint32_t vr_value;
-} ui_state_t;
-
-extern ui_state_t ui_state;
 
 extern void ui_init();
 

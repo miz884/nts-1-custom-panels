@@ -3,6 +3,7 @@
 
 #define is_pressed(i) (ui_state.sw_pressed & (1U << i))
 #define is_long_pressed(i) (ui_state.sw_long_pressed & (1U << i))
+#define is_raw_pressed(i) (ui_internal_state.sw_raw_pressed & (1U << i))
 #define sw_pressed(a, i) (a |= (1U << i))
 #define sw_released(a, i) (a &= ~(1U << i)) 
 
@@ -21,6 +22,7 @@ ui_state_t ui_state = {
 typedef struct ui_internal_state {
   uint32_t last_scan_us;
   uint16_t sw_raw_pressed;
+  uint16_t sw_ignore_next;
   uint32_t sw_last_event_us[sw_count];
   bool vr_updated;
   uint8_t nts1_param_id;
@@ -32,6 +34,7 @@ typedef struct ui_internal_state {
 ui_internal_state_t ui_internal_state = {
   .last_scan_us = 0x0,
   .sw_raw_pressed = 0x0,
+  .sw_ignore_next = 0x0,
   .sw_last_event_us = { 0U },
   .vr_updated = false,
   .nts1_param_id = 0x0,
@@ -54,6 +57,7 @@ void ui_init() {
   // Init ui_internal_state
   ui_internal_state.last_scan_us = 0x0;
   ui_internal_state.sw_raw_pressed = 0x0;
+  ui_internal_state.sw_ignore_next = 0x0;
   for (uint8_t i = 0; i < sw_count; ++i) {
     ui_internal_state.sw_last_event_us[i] = 0U;
   }
@@ -85,6 +89,10 @@ void ui_scan(uint32_t now_us) {
     }
     // Check H -> L
     if ((prev_sw_raw_pressed & (1U << i)) && val == 0) {
+      if (ui_internal_state.sw_ignore_next & (1U << i)) {
+        ui_internal_state.sw_ignore_next &= ~(1U << i);
+        continue;
+      }
       const uint32_t duration = now_us - ui_internal_state.sw_last_event_us[i];
       if (duration > UI_LONG_PRESS_THRESHOLD_US) {
         sw_pressed(ui_state.sw_long_pressed, i);
@@ -111,87 +119,74 @@ void ui_update_leds(uint8_t mask) {
 }
 
 void ui_handle_mode_change() {
-  bool mode_changed = true;
   if (is_pressed(sw0)) {
     ui_state.mode = UI_MODE_PLAY;
   } else if (is_pressed(sw1)) {
     ui_state.mode = UI_MODE_SEQ_EDIT;
-  } else if (is_pressed(sw1)) {
+  } else if (is_pressed(sw2)) {
     ui_state.mode = UI_MODE_SOUND_EDIT;
-  } else {
-    mode_changed = false;
   }
-  if (mode_changed) {
-    ui_state.sw_pressed = 0x0;
-    ui_state.sw_long_pressed = 0x0;
-  }
+  ui_state.sw_pressed = 0x0;
+  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_play_sw() {
-  bool changed = false;
+  if (!(ui_state.sw_pressed & 0xFF)) return;
   // long Play (sw9) --> stop seq.
   if (is_long_pressed(sw9)) {
     seq_state.is_playing = false;
-    changed = true;
   } else if (is_pressed(sw9)) {
     // Play (sw9) --> start seq.
-    seq_state.is_playing = true;    
-    seq_state.flags |= SEQ_FLAG_RESET;
-    changed = true;
+    if (!seq_state.is_playing) {
+      seq_state.flags |= SEQ_FLAG_RESET;
+    }
+    seq_state.is_playing = true;
   }
   // Shift (sw8) + sw? --> bank on / off
-  if (ui_internal_state.sw_raw_pressed & (1U << sw8)) {
-    // Shift (sw8) + pressed --> bank on
+  if (is_raw_pressed(sw8)) {
+    // Shift (sw8) + sw? --> bank on
     if (ui_state.sw_pressed & 0xFF) {
       seq_config.bank_active |= ui_state.sw_pressed & 0xFF;
-      changed = true;
     }
     // Shift (sw8) + long sw? --> bank off
     if (ui_state.sw_long_pressed & 0xFF) {
       seq_config.bank_active &= ~(ui_state.sw_long_pressed & 0xFF);
-      changed = true;
     }
-  } else if (ui_state.sw_pressed & 0xFF) {
+  } else {
     // sw? --> next bank
     for (int8_t i = 0; i < sw_count; ++i) {
       if (is_pressed(i)) {
-        seq_state.next_bank = i;
         seq_config.bank_active |= (1U << i);
-        changed = true;
+        seq_state.next_bank = i;
         break;
       }
     }
   }
-  if (changed) {
-    ui_state.sw_pressed = 0x0;
-    ui_state.sw_long_pressed = 0x0;
-  }
+  ui_state.sw_pressed = 0x0;
+  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_seq_edit_sw () {
   if (!(ui_state.sw_pressed & 0xFF)) return;
-  bool changed = false;
   for (int8_t i = 0; i < sw_count; ++i) {
     if (is_pressed(i)) {
       // Shift (sw8) + sw? --> bank change
-      if (ui_internal_state.sw_raw_pressed & (1U << sw8)) {
+      if (is_raw_pressed(sw8)) {
         ui_internal_state.curr_bank = i;
       } else {
         // sw? --> step change
         ui_internal_state.curr_step = i;
       }
-      changed = true;
       break;
     }
   }
-  if (changed) {
-    ui_state.sw_pressed = 0x0;
-    ui_state.sw_long_pressed = 0x0;
-  }
+  ui_state.sw_pressed = 0x0;
+  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_sound_edit_sw() {
   if (!(ui_state.sw_pressed & 0xFF)) return;
+  // Select the smallest in pushed switches.
   uint8_t sw = 0x0;
   for (int8_t i = 0; i < sw_count; ++i) {
     if (is_pressed(i)) {
@@ -199,151 +194,152 @@ void ui_handle_sound_edit_sw() {
       break;
     }
   }
-  // Shift (sw8) + sw? --> submode change
-  if (ui_internal_state.sw_raw_pressed & (1U << sw8)) {
-    ui_state.submode = sw;
-  } else {
-    // sw? --> param change
-    switch(ui_state.submode) {
-      case UI_SUBMODE_OSC:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_SHAPE;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_SHIFT_SHAPE;
-            break;
-          case sw4:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_LFO_RATE;
-            break;
-          case sw5:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_LFO_DEPTH;
-            break;
-        }
-        break;
-      case UI_SUBMODE_OSC_USER:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT1;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT2;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT3;
-            break;
-          case sw3:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT4;
-            break;
-          case sw4:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT5;
-            break;
-          case sw5:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
-            ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT6;
-            break;
-        }
-        break;
-      case UI_SUBMODE_FILTER:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_CUTOFF;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_PEAK;
-            break;
-          case sw4:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_LFO_RATE;
-            break;
-          case sw5:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_LFO_DEPTH;
-            break;
-        }
-        break;
-      case UI_SUBMODE_EG:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_ATTACK;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_RELEASE;
-            break;
-          case sw4:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_LFO_RATE;
-            break;
-          case sw5:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_LFO_DEPTH;
-            break;
-        }
-        break;
-      case UI_SUBMODE_MOD:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_TIME;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_DEPTH;
-            break;
-        }
-        break;
-      case UI_SUBMODE_DELAY:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_TIME;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_DEPTH;
-            break;
-          case sw3:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_MIX;
-            break;
-        }
-        break;
-      case UI_SUBMODE_REVERB:
-        switch(sw) {
-          case sw0:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_TYPE;
-            break;
-          case sw1:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_TIME;
-            break;
-          case sw2:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_DEPTH;
-            break;
-          case sw3:
-            ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_MIX;
-            break;
-        }
-        break;
-    }
-  }
   ui_state.sw_pressed = 0x0;
   ui_state.sw_long_pressed = 0x0;
+  // Shift (sw8) + sw? --> submode change
+  if (is_raw_pressed(sw8)) {
+    ui_state.submode = sw;
+    return;
+  }
+  // sw? --> param change
+  switch(ui_state.submode) {
+    case UI_SUBMODE_OSC:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_SHAPE;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_SHIFT_SHAPE;
+          return;
+        case sw4:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_LFO_RATE;
+          return;
+        case sw5:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_LFO_DEPTH;
+          return;
+      }
+      return;
+    case UI_SUBMODE_OSC_USER:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT1;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT2;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT3;
+          return;
+        case sw3:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT4;
+          return;
+        case sw4:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT5;
+          return;
+        case sw5:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_OSC_EDIT;
+          ui_internal_state.nts1_param_subid = NTS1::PARAM_SUBID_OSC_EDIT6;
+          return;
+      }
+      return;
+    case UI_SUBMODE_FILTER:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_CUTOFF;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_PEAK;
+          return;
+        case sw4:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_LFO_RATE;
+          return;
+        case sw5:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_FILT_LFO_DEPTH;
+          return;
+      }
+      break;
+    case UI_SUBMODE_EG:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_ATTACK;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_RELEASE;
+          return;
+        case sw4:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_LFO_RATE;
+          return;
+        case sw5:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_AMPEG_LFO_DEPTH;
+          return;
+      }
+      return;
+    case UI_SUBMODE_MOD:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_TIME;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_MOD_DEPTH;
+          return;
+      }
+      return;
+    case UI_SUBMODE_DELAY:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_TIME;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_DEPTH;
+          return;
+        case sw3:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_DEL_MIX;
+          return;
+      }
+      return;
+    case UI_SUBMODE_REVERB:
+      switch(sw) {
+        case sw0:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_TYPE;
+          return;
+        case sw1:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_TIME;
+          return;
+        case sw2:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_DEPTH;
+          return;
+        case sw3:
+          ui_internal_state.nts1_param_id = NTS1::PARAM_ID_REV_MIX;
+          return;
+      }
+      return;
+  }
 }
 
 void ui_handle_sw() {
   // mode change (sw8 + sw9 + sw?)
-  if (is_pressed(sw8) && is_pressed(sw9)) {
+  if (is_raw_pressed(sw8) && is_raw_pressed(sw9)) {
+    ui_internal_state.sw_ignore_next |= (1U << sw9);
     ui_handle_mode_change();
     return;
   }
@@ -351,15 +347,13 @@ void ui_handle_sw() {
   switch(ui_state.mode) {
     case UI_MODE_PLAY:
       ui_handle_play_sw();
-      break;
+      return;
     case UI_MODE_SEQ_EDIT:
       ui_handle_seq_edit_sw();
-      break;
+      return;
     case UI_MODE_SOUND_EDIT:
       ui_handle_sound_edit_sw();
-      break;
-    default:
-      break;
+      return;
   }
 }
 
@@ -393,9 +387,9 @@ void ui_handle_vr() {
           break;
       }
       if (ui_internal_state.nts1_param_id == NTS1::PARAM_ID_OSC_EDIT) {
-        nts1.paramChange(ui_internal_state.nts1_param_id, ui_internal_state.nts1_param_subid, (uint16_t)(val / max_val));
+        nts1.paramChange(ui_internal_state.nts1_param_id, ui_internal_state.nts1_param_subid, val);
       } else {
-        nts1.paramChange(ui_internal_state.nts1_param_id, NTS1::INVALID_PARAM_SUB_ID, val);
+        nts1.paramChange(ui_internal_state.nts1_param_id, NTS1::INVALID_PARAM_SUB_ID, (uint16_t)(val / max_val));
       }
       break;
   }

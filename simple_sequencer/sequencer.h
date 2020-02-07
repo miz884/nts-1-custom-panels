@@ -10,7 +10,7 @@
 extern NTS1 nts1;
 
 enum {
-  SEQ_FLAG_RESET = 1U << 0
+  SEQ_FLAG_RESET = 1U << 0,
 };
 
 typedef struct seq_state {
