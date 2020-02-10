@@ -50,10 +50,13 @@ void seq_reset() {
     nts1.noteOff(seq_state.curr_note);
     seq_state.curr_note = 0x0;
   }
-  // TODO update here
+  // Init seq_state.
+  seq_state.last_tick_us = 0x0;
   seq_state.ticks = 0x0;
+  seq_state.bank = 0x0;
   seq_state.step = 0x0;
-  seq_state.transpose = 0U;
+  seq_state.next_bank = 0xFF;
+  seq_state.transpose = 0;
 }
 
 void seq_timer_handler(HardwareTimer *timer) {

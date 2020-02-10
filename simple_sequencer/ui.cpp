@@ -377,22 +377,19 @@ void ui_handle_vr() {
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;
-      // TODO Adjust the max values for each TYPE.
       switch (ui_internal_state.nts1_param_id) {
-        case NTS1::PARAM_ID_OSC_TYPE:
-          max_val = 16;
-          break;
         case NTS1::PARAM_ID_AMPEG_TYPE:
           max_val = 4;
           break;
+        case NTS1::PARAM_ID_OSC_TYPE:
         case NTS1::PARAM_ID_MOD_TYPE:
-          max_val = 16;
+          // Default 4 + User 16 = 20. 0 = Off
+          max_val = 20;
           break;
         case NTS1::PARAM_ID_DEL_TYPE:
-          max_val = 16;
-          break;
         case NTS1::PARAM_ID_REV_TYPE:
-          max_val = 16;
+          // Default 5 + User 8 = 13. 0 = Off
+          max_val = 13;
           break;
       }
       if (ui_internal_state.nts1_param_id == NTS1::PARAM_ID_OSC_EDIT) {
