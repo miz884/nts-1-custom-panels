@@ -21,6 +21,7 @@ typedef struct seq_state {
   uint8_t flags;
   uint8_t curr_note;
   uint8_t next_bank;
+  int8_t transpose;
   bool is_playing;
 } seq_state_t;
 

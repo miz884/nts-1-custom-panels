@@ -13,13 +13,14 @@ seq_state_t seq_state = {
   .flags = 0x0,
   .curr_note = 0x0,
   .next_bank = 0xFF,
+  .transpose = 0,
   .is_playing = false
 };
 
 seq_config_t seq_config = {
   .tempo = 1200,
   .notes = { 0x42 },
-  .bank_active = 1U
+  .bank_active = 1U,
 };
 
 void seq_init() {
@@ -31,6 +32,7 @@ void seq_init() {
   seq_state.flags = 0x0;
   seq_state.curr_note = 0x0;
   seq_state.next_bank = 0xFF;
+  seq_state.transpose = 0;
   seq_state.is_playing = false;
   // Init seq_config.
   seq_config.tempo = 1200;
@@ -51,6 +53,7 @@ void seq_reset() {
   // TODO update here
   seq_state.ticks = 0x0;
   seq_state.step = 0x0;
+  seq_state.transpose = 0U;
 }
 
 void seq_timer_handler(HardwareTimer *timer) {
@@ -100,6 +103,7 @@ void seq_timer_handler(HardwareTimer *timer) {
       }
       // Note on.
       seq_state.curr_note = seq_config.notes[seq_state.bank][seq_state.step];
+      seq_state.curr_note += seq_state.transpose;
       if (seq_state.curr_note > 0x0) {
         nts1.noteOn(seq_state.curr_note, 0x7F);
       }

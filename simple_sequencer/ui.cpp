@@ -131,6 +131,9 @@ void ui_handle_mode_change() {
 }
 
 void ui_handle_play_sw() {
+  if (is_long_pressed(sw8) && seq_state.transpose != 0) {
+    seq_state.transpose = 0;
+  }
   if (!(ui_state.sw_pressed & 0xFF)) return;
   // long Play (sw9) --> stop seq.
   if (is_long_pressed(sw9)) {
@@ -361,7 +364,13 @@ void ui_handle_vr() {
   const uint32_t val = ui_state.vr_value;
   switch(ui_state.mode) {
     case UI_MODE_PLAY:
-      seq_config.tempo = 200 + 3000 * val / 1023;
+      if (is_raw_pressed(sw8)) {
+        // -64 - 63
+        seq_state.transpose = 127 * val / 1023 - 64;
+      } else {
+        // 20.0 - 320.0
+        seq_config.tempo = 200 + 3000 * val / 1023;
+      }
       break;
     case UI_MODE_SEQ_EDIT:
       seq_config.notes[ui_internal_state.curr_bank][ui_internal_state.curr_step] = (val >> 3);

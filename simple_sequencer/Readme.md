@@ -20,6 +20,7 @@ We can swich between the 3 modes with the following sw combinations.
 ## Play mode
 
 - VR : tempo
+- sw8 + VR : transpose
 - sw0 - sw7 : Next bank number. After the current bank, it will jump to the designated bank (bank0 - bank7).
 - sw8 + sw0 - sw8 + sw7 : Bank on.
 - sw8 + Long sw0 - sw8 + Long sw7 : Bank off.
