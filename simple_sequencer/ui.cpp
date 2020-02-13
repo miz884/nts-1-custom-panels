@@ -132,6 +132,7 @@ void ui_handle_mode_change() {
 
 void ui_handle_play_sw() {
   if (is_long_pressed(sw8) && seq_state.transpose != 0) {
+    // Reset transpose when sw8 is released.
     seq_state.transpose = 0;
   }
   if (!(ui_state.sw_pressed & 0xFF)) return;
@@ -147,19 +148,15 @@ void ui_handle_play_sw() {
   }
   // Shift (sw8) + sw? --> bank on / off
   if (is_raw_pressed(sw8)) {
+    ui_internal_state.sw_ignore_next |= (1U << sw8);
     // Shift (sw8) + sw? --> bank on
-    if (ui_state.sw_pressed & 0xFF) {
-      seq_config.bank_active |= ui_state.sw_pressed & 0xFF;
-    }
+    seq_config.bank_active |= ui_state.sw_pressed & 0xFF;
     // Shift (sw8) + long sw? --> bank off
-    if (ui_state.sw_long_pressed & 0xFF) {
-      seq_config.bank_active &= ~(ui_state.sw_long_pressed & 0xFF);
-    }
+    seq_config.bank_active &= ~(ui_state.sw_long_pressed & 0xFF);
   } else {
     // sw? --> next bank
     for (int8_t i = 0; i < sw_count; ++i) {
       if (is_pressed(i)) {
-        seq_config.bank_active |= (1U << i);
         seq_state.next_bank = i;
         break;
       }
@@ -173,8 +170,9 @@ void ui_handle_seq_edit_sw () {
   if (!(ui_state.sw_pressed & 0xFF)) return;
   for (int8_t i = 0; i < sw_count; ++i) {
     if (is_pressed(i)) {
-      // Shift (sw8) + sw? --> bank change
       if (is_raw_pressed(sw8)) {
+        ui_internal_state.sw_ignore_next |= (1U << sw8);
+        // Shift (sw8) + sw? --> bank change
         ui_internal_state.curr_bank = i;
       } else {
         // sw? --> step change
@@ -201,6 +199,7 @@ void ui_handle_sound_edit_sw() {
   ui_state.sw_long_pressed = 0x0;
   // Shift (sw8) + sw? --> submode change
   if (is_raw_pressed(sw8)) {
+    ui_internal_state.sw_ignore_next |= (1U << sw8);
     ui_state.submode = sw;
     return;
   }
@@ -342,6 +341,7 @@ void ui_handle_sound_edit_sw() {
 void ui_handle_sw() {
   // mode change (sw8 + sw9 + sw?)
   if (is_raw_pressed(sw8) && is_raw_pressed(sw9)) {
+    ui_internal_state.sw_ignore_next |= (1U << sw8);
     ui_internal_state.sw_ignore_next |= (1U << sw9);
     ui_handle_mode_change();
     return;
@@ -365,6 +365,7 @@ void ui_handle_vr() {
   switch(ui_state.mode) {
     case UI_MODE_PLAY:
       if (is_raw_pressed(sw8)) {
+        ui_internal_state.sw_ignore_next |= (1U << sw8);
         // -64 - 63
         seq_state.transpose = 127 * val / 1023 - 64;
       } else {
@@ -377,22 +378,19 @@ void ui_handle_vr() {
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;
-      // TODO Adjust the max values for each TYPE.
       switch (ui_internal_state.nts1_param_id) {
-        case NTS1::PARAM_ID_OSC_TYPE:
-          max_val = 16;
-          break;
         case NTS1::PARAM_ID_AMPEG_TYPE:
           max_val = 4;
           break;
+        case NTS1::PARAM_ID_OSC_TYPE:
         case NTS1::PARAM_ID_MOD_TYPE:
-          max_val = 16;
+          // Default 4 + User 16 = 20. 0 = Off
+          max_val = 20;
           break;
         case NTS1::PARAM_ID_DEL_TYPE:
-          max_val = 16;
-          break;
         case NTS1::PARAM_ID_REV_TYPE:
-          max_val = 16;
+          // Default 5 + User 8 = 13. 0 = Off
+          max_val = 13;
           break;
       }
       if (ui_internal_state.nts1_param_id == NTS1::PARAM_ID_OSC_EDIT) {
