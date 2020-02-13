@@ -23,27 +23,6 @@ seq_config_t seq_config = {
   .bank_active = 1U,
 };
 
-void seq_init() {
-  // Init seq_state.
-  seq_state.last_tick_us = 0x0;
-  seq_state.ticks = 0x0;
-  seq_state.bank = 0x0;
-  seq_state.step = 0x0;
-  seq_state.flags = 0x0;
-  seq_state.curr_note = 0x0;
-  seq_state.next_bank = 0xFF;
-  seq_state.transpose = 0;
-  seq_state.is_playing = false;
-  // Init seq_config.
-  seq_config.tempo = 1200;
-  for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
-    for (uint32_t j = 0; j < SEQ_NUM_STEPS; ++j) {
-      seq_config.notes[j][i] = 0x42;
-    }
-  }
-  seq_config.bank_active = 1U;
-}
-
 void seq_reset() {
   // Note off if any pending notes.
   if (seq_state.curr_note > 0x0) {
@@ -57,6 +36,21 @@ void seq_reset() {
   seq_state.step = 0x0;
   seq_state.next_bank = 0xFF;
   seq_state.transpose = 0;
+}
+
+void seq_init() {
+  seq_reset();
+  // Init seq_state.
+  seq_state.flags = 0x0;
+  seq_state.is_playing = false;
+  // Init seq_config.
+  seq_config.tempo = 1200;
+  for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
+    for (uint32_t j = 0; j < SEQ_NUM_STEPS; ++j) {
+      seq_config.notes[j][i] = 0x42;
+    }
+  }
+  seq_config.bank_active = 1U;
 }
 
 void seq_timer_handler(HardwareTimer *timer) {
@@ -90,10 +84,11 @@ void seq_timer_handler(HardwareTimer *timer) {
           seq_state.next_bank = 0xFF;
         } else {
           // Otherwise, jump to next active bank.
-          const uint16_t prev_bank = seq_state.bank;
+          const uint8_t prev_bank = seq_state.bank;
           for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
             if (seq_config.bank_active & (1U << i)) {
               if (i < prev_bank && i < seq_state.bank) {
+                // To keep the 1st H bit for the case if the prev is the last H.
                 seq_state.bank = i;
               }
               if (i > prev_bank) {
