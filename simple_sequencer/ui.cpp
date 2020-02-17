@@ -76,6 +76,8 @@ void ui_init() {
 
 void ui_scan(uint32_t now_us) {
   // Scan switches.
+  ui_state.sw_pressed = 0x0;
+  ui_state.sw_long_pressed = 0x0;
   const uint16_t prev_sw_raw_pressed = ui_internal_state.sw_raw_pressed;
   ui_internal_state.sw_raw_pressed = 0x0;
   for (uint8_t i = 0; i < sw_count; ++i) {
@@ -126,8 +128,6 @@ void ui_handle_mode_change() {
   } else if (is_pressed(sw2)) {
     ui_state.mode = UI_MODE_SOUND_EDIT;
   }
-  ui_state.sw_pressed = 0x0;
-  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_play_sw() {
@@ -162,8 +162,6 @@ void ui_handle_play_sw() {
       }
     }
   }
-  ui_state.sw_pressed = 0x0;
-  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_seq_edit_sw () {
@@ -181,8 +179,6 @@ void ui_handle_seq_edit_sw () {
       break;
     }
   }
-  ui_state.sw_pressed = 0x0;
-  ui_state.sw_long_pressed = 0x0;
 }
 
 void ui_handle_sound_edit_sw() {
@@ -365,7 +361,6 @@ void ui_handle_vr() {
   switch(ui_state.mode) {
     case UI_MODE_PLAY:
       if (is_raw_pressed(sw8)) {
-        ui_internal_state.sw_ignore_next |= (1U << sw8);
         // -64 - 63
         seq_state.transpose = 127 * val / 1023 - 64;
       } else {

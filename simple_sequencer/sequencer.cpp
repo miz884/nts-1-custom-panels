@@ -46,7 +46,7 @@ void seq_init() {
   // Init seq_config.
   seq_config.tempo = 1200;
   for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
-    for (uint32_t j = 0; j < SEQ_NUM_STEPS; ++j) {
+    for (uint8_t j = 0; j < SEQ_NUM_STEPS; ++j) {
       seq_config.notes[j][i] = 0x42;
     }
   }
@@ -65,7 +65,9 @@ void seq_timer_handler(HardwareTimer *timer) {
     return;
   }
 
-  const uint32_t us_per_tick = SEQ_MIN_US / ((seq_config.tempo / 10) * SEQ_TICKS_PER_STEP);
+  // 60 (sec/min) / (tempo / 10) (step/min) / SEQ_TICKS_PER_STEP (ticks/step)
+  // --> 10 * 60 / tempo / SEQ_TICKS_PER_STEP (sec/ticks)
+  const uint32_t us_per_tick = 10 * SEQ_MIN_US / (seq_config.tempo * SEQ_TICKS_PER_STEP);
   const uint32_t us_since_last_tick = now_us - seq_state.last_tick_us;
   if (us_since_last_tick >= us_per_tick) {
     // Next tick.
