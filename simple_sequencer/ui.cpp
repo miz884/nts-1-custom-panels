@@ -89,7 +89,6 @@ void ui_scan(uint32_t now_us) {
   }
 }
 
-
 void ui_handle_mode_change() {
   if (is_pressed(sw0)) {
     ui_state.mode = UI_MODE_PLAY;

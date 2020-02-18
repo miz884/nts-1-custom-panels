@@ -165,6 +165,10 @@ const uint8_t nts1_params[7][8] = {{
   }
 };
 
+const uint8_t ui_submode_leds[7] = {
+  0x37, 0x77, 0x37, 0x37, 0x07, 0x0f, 0x0f
+};
+
 typedef struct ui_state {
   uint16_t mode;
   uint16_t submode;
