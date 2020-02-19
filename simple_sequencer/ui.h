@@ -17,6 +17,7 @@
 enum {
   UI_MODE_PLAY = 0,
   UI_MODE_SEQ_EDIT,
+  UI_MODE_SCALE_EDIT,
   UI_MODE_SOUND_EDIT,
 };
 
@@ -92,7 +93,7 @@ const uint8_t vr_pins[vr_count] = {
   A10
 };
 
-const uint8_t nts1_params[7][8] = {{
+const uint8_t nts1_params[][8] = {{
     // For UI_SUBMODE_OSC
     NTS1::PARAM_ID_OSC_TYPE,
     NTS1::PARAM_ID_OSC_SHAPE,

@@ -1,3 +1,4 @@
+#include "scale.h"
 #include "sequencer.h"
 
 #define SEQ_MIN_US 6000000UL
@@ -21,6 +22,7 @@ seq_config_t seq_config = {
   .tempo = 1200,
   .notes = { 0x42 },
   .bank_active = 1U,
+  .scale = seq_scales[0],
 };
 
 void seq_reset() {
@@ -51,6 +53,7 @@ void seq_init() {
     }
   }
   seq_config.bank_active = 1U;
+  seq_config.scale = seq_scales[0];
 }
 
 void seq_timer_handler(HardwareTimer *timer) {

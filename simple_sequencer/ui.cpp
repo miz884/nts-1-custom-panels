@@ -1,6 +1,7 @@
-#include "ui.h"
-#include "sequencer.h"
 #include "led.h"
+#include "scale.h"
+#include "sequencer.h"
+#include "ui.h"
 
 ui_state_t ui_state = {
   .mode = UI_MODE_PLAY,
@@ -150,6 +151,21 @@ void ui_handle_seq_edit_sw () {
   }
 }
 
+void ui_handle_scale_edit_sw () {
+  if (!(ui_state.sw_pressed & 0xFF)) return;
+  // Select the smallest in pushed switches.
+  uint8_t sw = 0x0;
+  for (int8_t i = 0; i < sw_count; ++i) {
+    if (is_pressed(i)) {
+      sw = i;
+      break;
+    }
+  }
+  if (sw < NUM_SCALES) {
+    seq_config.scale = seq_scales[sw];
+  }
+}
+
 void ui_handle_sound_edit_sw() {
   if (!(ui_state.sw_pressed & 0xFF)) return;
   // Select the smallest in pushed switches.
@@ -188,6 +204,9 @@ void ui_handle_sw() {
     case UI_MODE_SEQ_EDIT:
       ui_handle_seq_edit_sw();
       return;
+    case UI_MODE_SCALE_EDIT:
+      ui_handle_scale_edit_sw();
+      return;
     case UI_MODE_SOUND_EDIT:
       ui_handle_sound_edit_sw();
       return;
@@ -208,6 +227,9 @@ void ui_handle_vr() {
       break;
     case UI_MODE_SEQ_EDIT:
       seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = (val >> 3);
+      break;
+    case UI_MODE_SCALE_EDIT:
+      // Nothing to do.
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;

@@ -1,6 +1,6 @@
 #include "led.h"
-#include "ui.h"
 #include "sequencer.h"
+#include "ui.h"
 
 #define LED_BLINK_US 100000
 #define LED_DIM_US 10000
