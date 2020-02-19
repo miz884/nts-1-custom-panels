@@ -5,7 +5,7 @@
 
 #define NUM_SCALES 6
 
-uint16_t seq_scales[] = {
+const uint16_t seq_scales[] = {
   // 1 #1 2 #2 | 3 4 #4 5 | #5 6 #6 7 --> 0000 1111 1111 1111
   // 1 b1 2 b3 | 3 4 b5 5 | b6 6 b7 7 --> 0000 1111 1111 1111
   0x0FFF, // Chromatic scale: 1 #1 2 #2 3 4 #4 5 #5 6 #6 7 --> 0000 1111 1111 1111
