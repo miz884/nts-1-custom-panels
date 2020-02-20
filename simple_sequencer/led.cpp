@@ -20,12 +20,12 @@ void led_update_internal(const uint32_t now_us, uint8_t led_on,
   // Pass through led_on if and only if led_blink is off.
   // [a]         : 0000 1010
   // If led_blink is on, switch on / off based on now_us.
-  // [b]         : 0101 0101 or  0000 0000
+  // [b]         : 0000 0000 or 0101 0101
   // Then, [a] | [b]
-  //             : 0101 1111 <-> 0000 1010
+  //             : 0000 1010 or 0101 1111
   // For diabled bit, if it is dimmed, blink it quickly.
-  //             : 0101 1111 <-> 0111 1111
-  //             : 0000 1010 <-> 0011 1010
+  //             : 0000 1010 or 0101 1111
+  //             : 0011 1011 or 0111 1111
   const uint8_t blink_toggle = ((now_us / LED_BLINK_US) % 2 == 0) ? 0U : ~0U;
   uint8_t led_mask = (led_on & ~led_blink) | (led_blink & blink_toggle);
   const uint8_t dim_toggle =  ((now_us / LED_DIM_US) % 2 == 0) ? 0U : ~0U;
@@ -39,7 +39,7 @@ void led_update(const uint32_t now_us) {
     if (is_raw_pressed(sw8)) {
       // Shift (sw8) + sw? --> bank on / off
       // Active banks --> ON
-      // All banks --> Dim
+      // Available banks (all) --> Dim
       // No blinks
       led_update_internal(now_us, seq_config.bank_active, 0xFF, 0U);
     } else {
@@ -64,14 +64,13 @@ void led_update(const uint32_t now_us) {
       // Params --> Blink
       // Dim for available submodes.
       led_update_internal(now_us, (1U << ui_state.submode),
-        0x7F, (1U << ui_state.nts1_params_index));
+        0x7F, (1U << ui_state.params_index));
     } else {
-      // sw? --> param change
       // Submode --> ON
       // Params --> Blink
       // Dim for available params.
       led_update_internal(now_us, (1U << ui_state.submode),
-        ui_submode_leds[ui_state.nts1_params_index], (1U << ui_state.nts1_params_index));
+        ui_submode_leds[ui_state.params_index], (1U << ui_state.params_index));
     }
     break;
   }

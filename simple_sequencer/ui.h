@@ -18,6 +18,7 @@ enum {
   UI_MODE_PLAY = 0,
   UI_MODE_SEQ_EDIT,
   UI_MODE_SOUND_EDIT,
+  ui_mode_count
 };
 
 enum {
@@ -28,6 +29,7 @@ enum {
   UI_SUBMODE_MOD,
   UI_SUBMODE_DELAY,
   UI_SUBMODE_REVERB,
+  ui_submode_count
 };
 
 // Switch definition.
@@ -92,7 +94,7 @@ const uint8_t vr_pins[vr_count] = {
   A10
 };
 
-const uint8_t nts1_params[7][8] = {{
+const uint8_t nts1_params[ui_submode_count][8] = {{
     // For UI_SUBMODE_OSC
     NTS1::PARAM_ID_OSC_TYPE,
     NTS1::PARAM_ID_OSC_SHAPE,
@@ -165,23 +167,26 @@ const uint8_t nts1_params[7][8] = {{
   }
 };
 
-const uint8_t ui_submode_leds[7] = {
+const uint8_t ui_submode_leds[ui_submode_count] = {
   0x37, 0x77, 0x37, 0x37, 0x07, 0x0f, 0x0f
 };
 
 typedef struct ui_state {
+  uint32_t last_scan_us;
+
   uint16_t mode;
   uint16_t submode;
+  uint8_t params_index;
+
   uint16_t sw_pressed;
   uint16_t sw_long_pressed;
-  uint32_t vr_value;
-
-  uint32_t last_scan_us;
   uint16_t sw_raw_pressed;
   uint16_t sw_ignore_next;
   uint32_t sw_last_event_us[sw_count];
+
+  uint32_t vr_value;
   bool vr_updated;
-  uint8_t nts1_params_index;
+
   uint8_t curr_bank;
   uint8_t curr_step;
 } ui_state_t;
