@@ -1,10 +1,11 @@
 This is a 8-step-8-bank step sequncer with full sound edit functionality as same to the original NTS-1 panel.
 
-# 3 modes
-This sequencer has the following 3 modes:
+# 4 modes
+This sequencer has the following 4 modes:
 
 - Play mode
 - Sequencer edit mode
+- Sequencer scale select mode
 - Sound edit mode
 
 ## Mode changes
@@ -13,14 +14,15 @@ We can swich between the 3 modes with the following sw combinations.
 
 - sw8 + sw9 + sw0 --> Play mode
 - sw8 + sw9 + sw1 --> Sequencer edit mode
-- sw8 + sw9 + sw2 --> Sound edit mode
+- sw8 + sw9 + sw2 --> Sequencer scale select mode
+- sw8 + sw9 + sw3 --> Sound edit mode
 
 # Controls
 
 ## Play mode
 
 - VR : tempo
-- sw8 + VR : transpose
+- sw8 + VR : active transpose
 - sw0 - sw7 : Next bank number. After the current bank, it will jump to the designated bank (bank0 - bank7).
 - sw8 + sw0 - sw8 + sw7 : Bank on.
 - sw8 + Long sw0 - sw8 + Long sw7 : Bank off.
@@ -32,6 +34,20 @@ We can swich between the 3 modes with the following sw combinations.
 - VR : note (1 - 127) (0 means no sound)
 - sw0 - sw7 : Step to set the note.
 - sw8 + sw0 - sw8 + sw7 : Bank to set the note.
+
+## Sequencer scale select mode
+
+- VR : base transpose (-11 - 11)
+- sw0 - sw5 : Select scales.
+
+### Scales
+
+- sw0 : Chromatic scale
+- sw1 : Major scale
+- sw2 : Minor scale
+- sw3 : Blue note scale
+- sw4 : Gypsy scale
+- sw5 : Ryukyu scale
 
 ## Sound edit mode
 

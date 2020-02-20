@@ -102,6 +102,8 @@ void ui_handle_mode_change() {
   } else if (is_pressed(sw1)) {
     ui_state.mode = UI_MODE_SEQ_EDIT;
   } else if (is_pressed(sw2)) {
+    ui_state.mode = UI_MODE_SCALE_EDIT;
+  } else if (is_pressed(sw3)) {
     ui_state.mode = UI_MODE_SOUND_EDIT;
   }
 }
