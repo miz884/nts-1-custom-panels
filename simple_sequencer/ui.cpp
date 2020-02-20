@@ -4,18 +4,21 @@
 #include "ui.h"
 
 ui_state_t ui_state = {
+  .last_scan_us = 0x0,
+
   .mode = UI_MODE_PLAY,
   .submode = UI_SUBMODE_OSC,
+  .params_index = 0x0,
+
   .sw_pressed = 0x0,
   .sw_long_pressed = 0x0,
-  .vr_value = 0x0,
-
-  .last_scan_us = 0x0,
   .sw_raw_pressed = 0x0,
   .sw_ignore_next = 0x0,
   .sw_last_event_us = { 0U },
+
+  .vr_value = 0x0,
   .vr_updated = false,
-  .nts1_params_index = 0x0,
+
   .curr_bank = 0x0,
   .curr_step = 0x0,
 };
@@ -32,20 +35,23 @@ void ui_init() {
     pinMode(vr_pins[i], INPUT);
   }
   // Init ui_state
+  ui_state.last_scan_us = 0x0;
+
   ui_state.mode = UI_MODE_PLAY;
   ui_state.submode = UI_SUBMODE_OSC;
+  ui_state.params_index = 0x0;
+
   ui_state.sw_pressed = 0x0;
   ui_state.sw_long_pressed = 0x0;
-  ui_state.vr_value = 0x0;
-
-  ui_state.last_scan_us = 0x0;
   ui_state.sw_raw_pressed = 0x0;
   ui_state.sw_ignore_next = 0x0;
   for (uint8_t i = 0; i < sw_count; ++i) {
     ui_state.sw_last_event_us[i] = 0U;
   }
+
+  ui_state.vr_value = 0x0;
   ui_state.vr_updated = false;
-  ui_state.nts1_params_index = 0x0;
+
   ui_state.curr_bank = 0x0;
   ui_state.curr_step = 0x0;
 }
@@ -176,23 +182,24 @@ void ui_handle_sound_edit_sw() {
       break;
     }
   }
-  ui_state.sw_pressed = 0x0;
-  ui_state.sw_long_pressed = 0x0;
   // Shift (sw8) + sw? --> submode change
   if (is_raw_pressed(sw8)) {
     ui_state.sw_ignore_next |= (1U << sw8);
-    ui_state.submode = sw;
+    if (sw < ui_submode_count) {
+      ui_state.submode = sw;
+    }
   } else {
     // sw? --> param change
-    ui_state.nts1_params_index = sw;
+    if (nts1_params[ui_state.submode][sw] != 0xFF) {
+      ui_state.params_index = sw;
+    }
   }
 }
 
 void ui_handle_sw() {
   // mode change (sw8 + sw9 + sw?)
   if (is_raw_pressed(sw8) && is_raw_pressed(sw9)) {
-    ui_state.sw_ignore_next |= (1U << sw8);
-    ui_state.sw_ignore_next |= (1U << sw9);
+    ui_state.sw_ignore_next |= (1U << sw8) | (1U << sw9);
     ui_handle_mode_change();
     return;
   }
@@ -233,7 +240,7 @@ void ui_handle_vr() {
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;
-      switch (nts1_params[ui_state.submode][ui_state.nts1_params_index]) {
+      switch (nts1_params[ui_state.submode][ui_state.params_index]) {
         case 0xFF:
           return;
         case NTS1::PARAM_ID_AMPEG_TYPE:
@@ -252,9 +259,9 @@ void ui_handle_vr() {
       }
       if (ui_state.submode == UI_SUBMODE_OSC_USER) {
         nts1.paramChange(NTS1::PARAM_ID_OSC_EDIT,
-          nts1_params[ui_state.submode][ui_state.nts1_params_index], val);
+          nts1_params[ui_state.submode][ui_state.params_index], val);
       } else {
-        nts1.paramChange(nts1_params[ui_state.submode][ui_state.nts1_params_index],
+        nts1.paramChange(nts1_params[ui_state.submode][ui_state.params_index],
           NTS1::INVALID_PARAM_SUB_ID, (uint16_t)(val / max_val));
       }
       break;
@@ -267,12 +274,12 @@ void ui_timer_handler(HardwareTimer *timer) {
   if (now_us - ui_state.last_scan_us > UI_SCAN_INTERVAL_US) {
     ui_state.last_scan_us = now_us;
     ui_scan(now_us);
-    led_update(now_us);
     if (ui_state.sw_pressed > 0 || ui_state.sw_long_pressed > 0) {
       ui_handle_sw();
     }
     if (ui_state.vr_updated) {
       ui_handle_vr();
     }
+    led_update(now_us);
   }
 }
