@@ -21,7 +21,7 @@ typedef struct seq_state {
   uint8_t flags;
   uint8_t curr_note;
   uint8_t next_bank;
-  int8_t transpose;
+  int8_t active_transpose;
   bool is_playing;
 } seq_state_t;
 
@@ -32,6 +32,7 @@ typedef struct seq_config {
   uint8_t notes[SEQ_NUM_BANKS][SEQ_NUM_STEPS];
   uint8_t bank_active;
   uint16_t scale;
+  int8_t base_transpose;
 } seq_config_t;
 
 extern seq_config_t seq_config;

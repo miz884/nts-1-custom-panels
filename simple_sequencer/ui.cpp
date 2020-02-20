@@ -107,9 +107,9 @@ void ui_handle_mode_change() {
 }
 
 void ui_handle_play_sw() {
-  if (is_long_pressed(sw8) && seq_state.transpose != 0) {
-    // Reset transpose when sw8 is released.
-    seq_state.transpose = 0;
+  if (is_long_pressed(sw8) && seq_state.active_transpose != 0) {
+    // Reset active transpose when sw8 is released.
+    seq_state.active_transpose = 0;
   }
   if (!(ui_state.sw_pressed & 0xFF)) return;
   // long Play (sw9) --> stop seq.
@@ -226,7 +226,7 @@ void ui_handle_vr() {
     case UI_MODE_PLAY:
       if (is_raw_pressed(sw8)) {
         // -64 - 63
-        seq_state.transpose = 127 * val / 1023 - 64;
+        seq_state.active_transpose = 127 * val / 1023 - 64;
       } else {
         // 20.0 - 320.0
         seq_config.tempo = 200 + 3000 * val / 1023;
@@ -236,7 +236,8 @@ void ui_handle_vr() {
       seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = (val >> 3);
       break;
     case UI_MODE_SCALE_EDIT:
-      // Nothing to do.
+      // -11 - 11
+      seq_config.base_transpose = 22 * val / 1023 - 11;
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;

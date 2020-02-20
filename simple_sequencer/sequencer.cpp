@@ -14,15 +14,16 @@ seq_state_t seq_state = {
   .flags = 0x0,
   .curr_note = 0x0,
   .next_bank = 0xFF,
-  .transpose = 0,
+  .active_transpose = 0,
   .is_playing = false
 };
 
 seq_config_t seq_config = {
   .tempo = 1200,
-  .notes = { 0x42 },
+  .notes = { 0x42 }, // Middle C
   .bank_active = 1U,
   .scale = seq_scales[0],
+  .base_transpose = 0,
 };
 
 void seq_reset() {
@@ -37,7 +38,7 @@ void seq_reset() {
   seq_state.bank = 0x0;
   seq_state.step = 0x0;
   seq_state.next_bank = 0xFF;
-  seq_state.transpose = 0;
+  seq_state.active_transpose = 0;
 }
 
 void seq_init() {
@@ -49,11 +50,26 @@ void seq_init() {
   seq_config.tempo = 1200;
   for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
     for (uint8_t j = 0; j < SEQ_NUM_STEPS; ++j) {
-      seq_config.notes[j][i] = 0x42;
+      seq_config.notes[j][i] = 0x42; // Middle C
     }
   }
   seq_config.bank_active = 1U;
   seq_config.scale = seq_scales[0];
+  seq_config.base_transpose = 0;
+}
+
+uint8_t snap_to_scale(uint8_t note) {
+  // Find a enabled pitch class on the current scale.
+  // Looking at the upper notes.
+  uint16_t scale_mask = 0x1 << (note % 12);
+  while (!(seq_config.scale & scale_mask)) {
+    ++note;
+    scale_mask <<= 1;
+    if (scale_mask == 0x1000) {
+      scale_mask = 0x1;
+    }
+  }
+  return note;
 }
 
 void seq_timer_handler(HardwareTimer *timer) {
@@ -105,8 +121,10 @@ void seq_timer_handler(HardwareTimer *timer) {
         }
       }
       // Note on.
-      seq_state.curr_note = seq_config.notes[seq_state.bank][seq_state.step];
-      seq_state.curr_note += seq_state.transpose;
+      uint8_t note = seq_config.notes[seq_state.bank][seq_state.step];
+      note += seq_state.active_transpose;
+      note += seq_config.base_transpose;
+      seq_state.curr_note = snap_to_scale(note);
       if (seq_state.curr_note > 0x0) {
         nts1.noteOn(seq_state.curr_note, 0x7F);
       }
