@@ -1,7 +1,7 @@
 #include "scale.h"
 #include "sequencer.h"
 
-#define SEQ_MIN_US 6000000UL
+#define SEQ_MIN_US 60000000UL
 #define SEQ_TICKS_PER_STEP 100UL
 
 NTS1 nts1;
