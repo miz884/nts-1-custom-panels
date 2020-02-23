@@ -283,6 +283,6 @@ void ui_timer_handler(HardwareTimer *timer) {
     if (ui_state.vr_updated) {
       ui_handle_vr();
     }
-    led_update(now_us);
   }
+  led_update(now_us);
 }

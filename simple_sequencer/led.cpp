@@ -3,9 +3,14 @@
 #include "scale.h"
 #include "ui.h"
 
-#define LED_BLINK_US 200000
-#define LED_DIM_US 1000
-#define LED_DIM_INTERVAL 10
+#define LED_DUTY_INV 10
+#define LED_DIM_DUTY_INV 5
+#define LED_BLINK_US 100000
+
+led_state_t led_state = {
+  .global_duty_cycle = 0,
+  .dim_duty_cycle = 0,
+};
 
 void led_update_raw(uint8_t led_mask) {
   for (uint8_t i = 0; i < led_count; ++i) {
@@ -28,22 +33,30 @@ void led_update_internal(const uint32_t now_us, uint8_t led_on,
   // For diabled bit, if it is dimmed, blink it quickly.
   //             : 0000 1010 or 0101 1111
   //             : 0011 1011 or 0111 1111
-  const uint8_t blink_toggle = ((now_us / LED_BLINK_US) % 2 == 0) ? 0U : ~0U;
-  uint8_t led_mask = (led_on & ~led_blink) | (led_blink & blink_toggle);
-  const uint8_t dim_toggle =  ((now_us / LED_DIM_US) % LED_DIM_INTERVAL == 0) ? ~0U : 0U;
-  led_mask = led_mask | (~led_mask & led_dim & dim_toggle);
-  led_update_raw(led_mask);
+  if (led_state.global_duty_cycle > 0) {
+    led_update_raw(0U);
+  } else {
+    const uint8_t blink_toggle = ((now_us / LED_BLINK_US) % 2 == 0) ? 0U : ~0U;
+    uint8_t led_mask = (led_on & ~led_blink) | (led_blink & blink_toggle);
+    const uint8_t dim_toggle = (led_state.dim_duty_cycle > 0) ? 0U : ~0U;
+    led_mask = led_mask | (~led_mask & led_dim & dim_toggle);
+    led_update_raw(led_mask);
+  }
 }
 
 void led_update(const uint32_t now_us) {
+  ++led_state.global_duty_cycle;
+  led_state.global_duty_cycle %= LED_DUTY_INV;
+  ++led_state.dim_duty_cycle;
+  led_state.dim_duty_cycle %= (LED_DUTY_INV * LED_DIM_DUTY_INV);
   switch(ui_state.mode) {
   case UI_MODE_PLAY:
     if (is_raw_pressed(sw8)) {
       // Shift (sw8) + sw? --> bank on / off
       // Active banks --> ON
-      // Available banks (all) --> Dim
+      // No dim
       // No blinks
-      led_update_internal(now_us, seq_config.bank_active, 0xFF, 0U);
+      led_update_internal(now_us, seq_config.bank_active, 0x0, 0x0);
     } else {
       // Current bank --> Blink
       // Active banks --> Dim
@@ -55,9 +68,9 @@ void led_update(const uint32_t now_us) {
   case UI_MODE_SEQ_EDIT:
     // Current bank --> ON
     // Current step --> Blink
-    // Dim otherwise
+    // No dim.
     led_update_internal(now_us, (1U << ui_state.curr_bank),
-      0xFF, (1U << ui_state.curr_step));
+      0x0, (1U << ui_state.curr_step));
     break;
   case UI_MODE_SCALE_EDIT:
     // Current scale --> ON

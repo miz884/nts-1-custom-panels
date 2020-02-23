@@ -15,7 +15,7 @@ seq_state_t seq_state = {
   .curr_note = 0x0,
   .next_bank = 0xFF,
   .active_transpose = 0,
-  .is_playing = false
+  .is_playing = false,
 };
 
 seq_config_t seq_config = {
