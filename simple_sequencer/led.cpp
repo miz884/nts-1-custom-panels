@@ -4,7 +4,7 @@
 #include "ui.h"
 
 #define LED_DUTY_INV 10
-#define LED_DIM_DUTY_INV 5
+#define LED_DIM_DUTY_INV 8
 #define LED_BLINK_US 100000
 
 led_state_t led_state = {

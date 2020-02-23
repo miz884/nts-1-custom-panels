@@ -10,12 +10,27 @@ This sequencer has the following 4 modes:
 
 ## Mode changes
 
-We can swich between the 3 modes with the following sw combinations.
+It can swich between the 4 modes with the following sw combinations.
 
 - sw9 + sw10 + sw1 --> Play mode
 - sw9 + sw10 + sw2 --> Sequencer edit mode
 - sw9 + sw10 + sw3 --> Sequencer scale select mode
 - sw9 + sw10 + sw4 --> Sound edit mode
+
+# Save and Load configs
+
+It stores the sequencer config on the flash memory which will be kept even after the reset.
+
+- sw9 + sw10 + Long sw7 --> Load the Sequencer config
+- sw9 + sw10 + Long sw8 --> Save the Sequencer config
+
+The following configurations will be stored:
+
+- Tempo.
+- Notes on the all 64 steps (8 steps x 8 banks).
+- Active banks.
+- Scale.
+- Base transpose.
 
 # Controls
 

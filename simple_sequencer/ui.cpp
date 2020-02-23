@@ -1,3 +1,4 @@
+#include "flash.h"
 #include "led.h"
 #include "scale.h"
 #include "sequencer.h"
@@ -105,6 +106,10 @@ void ui_handle_mode_change() {
     ui_state.mode = UI_MODE_SCALE_EDIT;
   } else if (is_pressed(sw3)) {
     ui_state.mode = UI_MODE_SOUND_EDIT;
+  } else if (is_long_pressed(sw6)) {
+    load_config();
+  } else if (is_long_pressed(sw7)) {
+    save_config();
   }
 }
 
