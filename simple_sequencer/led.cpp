@@ -45,10 +45,15 @@ void led_update_internal(const uint32_t now_us, uint8_t led_on,
 }
 
 void led_update(const uint32_t now_us) {
+  // Increment duty cycles.
   ++led_state.global_duty_cycle;
   led_state.global_duty_cycle %= LED_DUTY_INV;
   ++led_state.dim_duty_cycle;
   led_state.dim_duty_cycle %= (LED_DUTY_INV * LED_DIM_DUTY_INV);
+  if (is_raw_pressed(sw8) && is_raw_pressed(sw9)) {
+    led_update_internal(now_us, (1U << ui_state.mode), 0x0, 0x0);
+    return;
+  }
   switch(ui_state.mode) {
   case UI_MODE_PLAY:
     if (is_raw_pressed(sw8)) {

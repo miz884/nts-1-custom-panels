@@ -143,6 +143,16 @@ void ui_handle_play_sw() {
 }
 
 void ui_handle_seq_edit_sw () {
+  if (is_pressed(sw9)) {
+    ++ui_state.curr_step;
+    if (ui_state.curr_step == SEQ_NUM_STEPS) {
+      ui_state.curr_step = 0;
+      ++ui_state.curr_bank;
+      if (ui_state.curr_bank == SEQ_NUM_BANKS) {
+        ui_state.curr_bank = 0;
+      }
+    }
+  }
   if (!(ui_state.sw_pressed & 0xFF)) return;
   for (int8_t i = 0; i < sw_count; ++i) {
     if (is_pressed(i)) {
