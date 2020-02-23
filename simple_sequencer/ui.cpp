@@ -235,7 +235,7 @@ void ui_handle_vr() {
       }
       break;
     case UI_MODE_SEQ_EDIT:
-      seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = (val >> 3);
+      seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = 128 * val / 1023 - 1;
       break;
     case UI_MODE_SCALE_EDIT:
       // -11 - 11

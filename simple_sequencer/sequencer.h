@@ -7,6 +7,10 @@
 #define SEQ_NUM_BANKS 8
 #define SEQ_NUM_STEPS 8
 
+#define NO_NOTE -1
+
+#define is_valid_note(n) (0 <= n && n < 128)
+
 extern NTS1 nts1;
 
 enum {
@@ -19,7 +23,7 @@ typedef struct seq_state {
   uint8_t bank;
   uint8_t step;
   uint8_t flags;
-  uint8_t curr_note;
+  int8_t curr_note;
   uint8_t next_bank;
   int8_t active_transpose;
   bool is_playing;
@@ -29,7 +33,7 @@ extern seq_state_t seq_state;
 
 typedef struct seq_config {
   uint32_t tempo;
-  uint8_t notes[SEQ_NUM_BANKS][SEQ_NUM_STEPS];
+  int8_t notes[SEQ_NUM_BANKS][SEQ_NUM_STEPS];
   uint8_t bank_active;
   uint8_t scale;
   int8_t base_transpose;

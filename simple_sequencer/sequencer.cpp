@@ -58,18 +58,18 @@ void seq_init() {
   seq_config.base_transpose = 0;
 }
 
-uint8_t snap_to_scale(uint8_t note) {
+int8_t snap_to_scale(int8_t note) {
   // Find a enabled pitch class on the current scale.
   // Looking at the upper notes.
   uint16_t scale_mask = 0x1 << (note % 12);
   while (!(seq_scales[seq_config.scale] & scale_mask)) {
     ++note;
     scale_mask <<= 1;
-    if (scale_mask == 0x1000) {
+    if (scale_mask == (0x1 << 12)) {
       scale_mask = 0x1;
     }
   }
-  return note;
+  return is_valid_note(note) ? note : NO_NOTE;
 }
 
 void seq_timer_handler(HardwareTimer *timer) {
@@ -120,19 +120,30 @@ void seq_timer_handler(HardwareTimer *timer) {
           }
         }
       }
-      // Note on.
-      uint8_t note = seq_config.notes[seq_state.bank][seq_state.step];
+      int8_t note = seq_config.notes[seq_state.bank][seq_state.step];
+      if (!is_valid_note(note)) {
+        seq_state.curr_note = NO_NOTE;
+        return;
+      }
+      // Apply transposes.
       note += seq_state.active_transpose;
       note += seq_config.base_transpose;
-      seq_state.curr_note = snap_to_scale(note);
-      if (seq_state.curr_note > 0x0) {
-        nts1.noteOn(seq_state.curr_note, 0x7F);
+      if (!is_valid_note(note)) {
+        seq_state.curr_note = NO_NOTE;
+        return;
+      }
+      // Snap to scale.
+      note = snap_to_scale(note);
+      // Note on.
+      if (is_valid_note(note)) {
+        seq_state.curr_note = note;
+        nts1.noteOn((uint8_t) note, 0x7F);
       }
     } else if (seq_state.ticks >= (SEQ_TICKS_PER_STEP >> 1)) {
       // Note off at 1/2 of the step.
-      if (seq_state.curr_note > 0x0) {
+      if (is_valid_note(seq_state.curr_note)) {
         nts1.noteOff(seq_state.curr_note);
-        seq_state.curr_note = 0x0;
+        seq_state.curr_note = NO_NOTE;
       }
     }
   }
