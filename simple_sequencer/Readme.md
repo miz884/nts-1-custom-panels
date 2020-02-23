@@ -12,98 +12,98 @@ This sequencer has the following 4 modes:
 
 We can swich between the 3 modes with the following sw combinations.
 
-- sw8 + sw9 + sw0 --> Play mode
-- sw8 + sw9 + sw1 --> Sequencer edit mode
-- sw8 + sw9 + sw2 --> Sequencer scale select mode
-- sw8 + sw9 + sw3 --> Sound edit mode
+- sw9 + sw10 + sw1 --> Play mode
+- sw9 + sw10 + sw2 --> Sequencer edit mode
+- sw9 + sw10 + sw3 --> Sequencer scale select mode
+- sw9 + sw10 + sw4 --> Sound edit mode
 
 # Controls
 
 ## Play mode
 
 - VR : tempo
-- sw8 + VR : active transpose
-- sw0 - sw7 : Next bank number. After the current bank, it will jump to the designated bank (bank0 - bank7).
-- sw8 + sw0 - sw8 + sw7 : Bank on.
-- sw8 + Long sw0 - sw8 + Long sw7 : Bank off.
-- sw9 : Start playing.
-- Long sw9 : Stop playing.
+- sw9 + VR : active transpose
+- sw1 - sw8 : Next bank number. After the current bank, it will jump to the designated bank (bank0 - bank7).
+- sw9 + (sw1 - sw8) : Bank on.
+- sw9 + (Long sw1 - Long sw8) : Bank off.
+- sw10 : Start playing.
+- Long sw10 : Stop playing.
 
 ## Sequencer edit mode
 
 - VR : note (1 - 127) (0 means no sound)
-- sw0 - sw7 : Step to set the note.
-- sw8 + sw0 - sw8 + sw7 : Bank to set the note.
+- sw1 - sw8 : Step to set the note.
+- sw9 + (sw1 - sw8) : Bank to set the note.
 
 ## Sequencer scale select mode
 
 - VR : base transpose (-11 - 11)
-- sw0 - sw5 : Select scales.
+- sw1 - sw6 : Select scales.
 
 ### Scales
 
-- sw0 : Chromatic scale
-- sw1 : Major scale
-- sw2 : Minor scale
-- sw3 : Blue note scale
-- sw4 : Gypsy scale
-- sw5 : Ryukyu scale
+- sw1 : Chromatic scale
+- sw2 : Major scale
+- sw3 : Minor scale
+- sw4 : Blue note scale
+- sw5 : Gypsy scale
+- sw6 : Ryukyu scale
 
 ## Sound edit mode
 
 - VR : Set params
-- sw8 + sw? : Submode
-  - sw8 + sw0 : OSC
-  - sw8 + sw1 : Edit parameters for user OSC
-  - sw8 + sw2 : Filter
-  - sw8 + sw3 : EG
-  - sw8 + sw4 : Mod
-  - sw8 + sw5 : Delay
-  - sw8 + sw6 : Reverb
+- sw9 + sw? : Submode
+  - sw9 + sw1 : OSC
+  - sw9 + sw2 : Edit parameters for user OSC
+  - sw9 + sw3 : Filter
+  - sw9 + sw4 : EG
+  - sw9 + sw5 : Mod
+  - sw9 + sw6 : Delay
+  - sw9 + sw7 : Reverb
 - sw? : Param types for the current submode. See below.
  
 ### OSC submode
 
-- sw0 : Oscilator type
-- sw1 : Shape
-- sw2 : Shift shape
-- sw4 : LFO rate
-- sw5 : LFO depth
+- sw1 : Oscilator type
+- sw2 : Shape
+- sw3 : Shift shape
+- sw5 : LFO rate
+- sw6 : LFO depth
 
 ### Edit parameters for user OSC
 
-- sw0 : USR0
-- sw1 : USR1
-- sw2 : USR2
-- sw3 : USR3
-- sw4 : USR4
-- sw5 : USR5
+- sw1 : USR0
+- sw2 : USR1
+- sw3 : USR2
+- sw4 : USR3
+- sw5 : USR4
+- sw6 : USR5
 
 ### Filter
 
-- sw0 : Filter type
-- sw1 : Cutoff
-- sw2 : Peak
-- sw4 : LFO rate
-- sw5 : LFO depth
+- sw1 : Filter type
+- sw2 : Cutoff
+- sw3 : Peak
+- sw5 : LFO rate
+- sw6 : LFO depth
 
 ### EG
 
-- sw0 : EG type
-- sw1 : Attach
-- sw2 : Release
-- sw4 : LFO rate
-- sw5 : LFO depth
+- sw1 : EG type
+- sw2 : Attach
+- sw3 : Release
+- sw5 : LFO rate
+- sw6 : LFO depth
 
 ### Mod
 
-- sw0 : Mod type
-- sw1 : time
-- sw2 : depth
+- sw1 : Mod type
+- sw2 : time
+- sw3 : depth
 
 ### Delay and Reverb
 
-- sw0 : type
-- sw1 : time
-- sw2 : depth
-- sw3 : mix
+- sw1 : type
+- sw2 : time
+- sw3 : depth
+- sw4 : mix
