@@ -63,7 +63,7 @@ void led_update(const uint32_t now_us) {
     // Current scale --> ON
     // Dim for available scales.
     led_update_internal(now_us, (1U << seq_config.scale),
-      0x0, AVAILABLE_SCALE_MASK);
+      AVAILABLE_SCALE_MASK, 0x0);
     break;
   case UI_MODE_SOUND_EDIT:
     if (is_raw_pressed(sw8)) {
