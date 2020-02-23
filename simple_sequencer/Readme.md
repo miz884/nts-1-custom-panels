@@ -46,7 +46,7 @@ The following configurations will be stored:
 
 ## Sequencer edit mode
 
-- VR : note (1 - 127) (0 means no sound)
+- VR : off, note 0 - 127
 - sw1 - sw8 : Step to set the note.
 - sw9 + (sw1 - sw8) : Bank to set the note.
 
