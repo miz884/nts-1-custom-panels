@@ -22,6 +22,10 @@ ui_state_t ui_state = {
 
   .curr_bank = 0x0,
   .curr_step = 0x0,
+
+  .curr_note = NO_NOTE,
+  .next_note = NO_NOTE,
+  .note_us = 0,
 };
 
 void ui_init() {
@@ -55,6 +59,10 @@ void ui_init() {
 
   ui_state.curr_bank = 0x0;
   ui_state.curr_step = 0x0;
+
+  ui_state.curr_note = NO_NOTE;
+  ui_state.next_note = NO_NOTE;
+  ui_state.note_us = 0;
 }
 
 void ui_scan(const uint32_t now_us) {
@@ -250,7 +258,8 @@ void ui_handle_vr() {
       }
       break;
     case UI_MODE_SEQ_EDIT:
-      seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = 128 * val / 1023 - 1;
+      ui_state.next_note = 128 * val / 1023 - 1;
+      seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = ui_state.next_note;
       break;
     case UI_MODE_SCALE_EDIT:
       // -11 - 11
@@ -287,6 +296,30 @@ void ui_handle_vr() {
   ui_state.vr_updated = false;
 }
 
+void ui_update_note(uint32_t now_us) {
+  // Note off on previous note.
+  if (is_valid_note(ui_state.curr_note) && now_us - ui_state.note_us > NOTE_DURATION_US) {
+    nts1.noteOff(ui_state.curr_note);
+    ui_state.curr_note = NO_NOTE;
+    ui_state.note_us = 0;
+  }
+  if (is_valid_note(ui_state.next_note)) {
+    // Note off on previous note.
+    if (is_valid_note(ui_state.curr_note)) {
+      nts1.noteOff(ui_state.curr_note);
+      ui_state.curr_note = NO_NOTE;
+      ui_state.note_us = 0;
+    }
+    if (seq_state.is_playing) {
+      ui_state.next_note = NO_NOTE;
+    } else {
+      ui_state.curr_note = ui_state.next_note;
+      ui_state.note_us = now_us;
+      nts1.noteOn(ui_state.curr_note, 0x7F);
+    }
+  }
+}
+
 void ui_timer_handler(HardwareTimer *timer) {
   const uint32_t now_us = micros();
   if (now_us - ui_state.last_scan_us > UI_SCAN_INTERVAL_US) {
@@ -298,6 +331,7 @@ void ui_timer_handler(HardwareTimer *timer) {
     if (ui_state.vr_updated) {
       ui_handle_vr();
     }
+    ui_update_note(now_us);
   }
   led_update(now_us);
 }

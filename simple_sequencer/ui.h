@@ -14,6 +14,8 @@
 #define UI_LONG_PRESS_THRESHOLD_US 300000
 #define UI_PRESS_THRESHOLD_US 30000
 
+#define NOTE_DURATION_US 500000
+
 enum {
   UI_MODE_PLAY = 0,
   UI_MODE_SEQ_EDIT,
@@ -158,6 +160,10 @@ typedef struct ui_state {
 
   uint8_t curr_bank;
   uint8_t curr_step;
+
+  uint8_t curr_note;
+  uint8_t next_note;
+  uint32_t note_us;
 } ui_state_t;
 
 extern ui_state_t ui_state;
