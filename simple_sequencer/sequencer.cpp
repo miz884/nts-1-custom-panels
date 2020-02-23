@@ -22,7 +22,7 @@ seq_config_t seq_config = {
   .tempo = 1200,
   .notes = { 0x42 }, // Middle C
   .bank_active = 1U,
-  .scale = seq_scales[0],
+  .scale = 0,
   .base_transpose = 0,
 };
 
@@ -54,7 +54,7 @@ void seq_init() {
     }
   }
   seq_config.bank_active = 1U;
-  seq_config.scale = seq_scales[0];
+  seq_config.scale = 0;
   seq_config.base_transpose = 0;
 }
 
@@ -62,7 +62,7 @@ uint8_t snap_to_scale(uint8_t note) {
   // Find a enabled pitch class on the current scale.
   // Looking at the upper notes.
   uint16_t scale_mask = 0x1 << (note % 12);
-  while (!(seq_config.scale & scale_mask)) {
+  while (!(seq_scales[seq_config.scale] & scale_mask)) {
     ++note;
     scale_mask <<= 1;
     if (scale_mask == 0x1000) {

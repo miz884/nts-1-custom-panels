@@ -4,6 +4,7 @@
 #include "Arduino.h"
 
 #define NUM_SCALES 6
+#define AVAILABLE_SCALE_MASK 0x3F
 
 const uint16_t seq_scales[] = {
   // 1 #1 2 #2 | 3 4 #4 5 | #5 6 #6 7 --> 0000 1111 1111 1111

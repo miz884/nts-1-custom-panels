@@ -1,9 +1,11 @@
 #include "led.h"
 #include "sequencer.h"
+#include "scale.h"
 #include "ui.h"
 
-#define LED_BLINK_US 100000
-#define LED_DIM_US 10000
+#define LED_BLINK_US 200000
+#define LED_DIM_US 1000
+#define LED_DIM_INTERVAL 10
 
 void led_update_raw(uint8_t led_mask) {
   for (uint8_t i = 0; i < led_count; ++i) {
@@ -28,8 +30,8 @@ void led_update_internal(const uint32_t now_us, uint8_t led_on,
   //             : 0011 1011 or 0111 1111
   const uint8_t blink_toggle = ((now_us / LED_BLINK_US) % 2 == 0) ? 0U : ~0U;
   uint8_t led_mask = (led_on & ~led_blink) | (led_blink & blink_toggle);
-  const uint8_t dim_toggle =  ((now_us / LED_DIM_US) % 2 == 0) ? 0U : ~0U;
-  led_mask = led_mask | (~led_mask & dim_toggle);
+  const uint8_t dim_toggle =  ((now_us / LED_DIM_US) % LED_DIM_INTERVAL == 0) ? ~0U : 0U;
+  led_mask = led_mask | (~led_mask & led_dim & dim_toggle);
   led_update_raw(led_mask);
 }
 
@@ -43,11 +45,11 @@ void led_update(const uint32_t now_us) {
       // No blinks
       led_update_internal(now_us, seq_config.bank_active, 0xFF, 0U);
     } else {
-      // Current bank --> ON
+      // Current bank --> Blink
       // Active banks --> Dim
-      // Current step --> Blink
-      led_update_internal(now_us, (1U << seq_state.bank),
-        seq_config.bank_active, (1U << seq_state.step));
+      // Current step --> ON
+      led_update_internal(now_us, (1U << seq_state.step),
+        seq_config.bank_active, (1U << seq_state.bank));
     }
     break;
   case UI_MODE_SEQ_EDIT:
@@ -56,6 +58,12 @@ void led_update(const uint32_t now_us) {
     // Dim otherwise
     led_update_internal(now_us, (1U << ui_state.curr_bank),
       0xFF, (1U << ui_state.curr_step));
+    break;
+  case UI_MODE_SCALE_EDIT:
+    // Current scale --> ON
+    // Dim for available scales.
+    led_update_internal(now_us, (1U << seq_config.scale),
+      0x0, AVAILABLE_SCALE_MASK);
     break;
   case UI_MODE_SOUND_EDIT:
     if (is_raw_pressed(sw8)) {
@@ -70,7 +78,7 @@ void led_update(const uint32_t now_us) {
       // Params --> Blink
       // Dim for available params.
       led_update_internal(now_us, (1U << ui_state.submode),
-        ui_submode_leds[ui_state.params_index], (1U << ui_state.params_index));
+        ui_submode_leds[ui_state.submode], (1U << ui_state.params_index));
     }
     break;
   }

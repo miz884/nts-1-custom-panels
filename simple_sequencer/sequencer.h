@@ -31,7 +31,7 @@ typedef struct seq_config {
   uint32_t tempo;
   uint8_t notes[SEQ_NUM_BANKS][SEQ_NUM_STEPS];
   uint8_t bank_active;
-  uint16_t scale;
+  uint8_t scale;
   int8_t base_transpose;
 } seq_config_t;
 

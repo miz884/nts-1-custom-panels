@@ -56,7 +56,7 @@ void ui_init() {
   ui_state.curr_step = 0x0;
 }
 
-void ui_scan(uint32_t now_us) {
+void ui_scan(const uint32_t now_us) {
   // Scan switches.
   ui_state.sw_pressed = 0x0;
   ui_state.sw_long_pressed = 0x0;
@@ -64,15 +64,15 @@ void ui_scan(uint32_t now_us) {
   ui_state.sw_raw_pressed = 0x0;
   for (uint8_t i = 0; i < sw_count; ++i) {
     const uint32_t val = nts1_digital_read(sw_pins[i]);
-    if (val > 0) {
+    if (val == 0) {
       sw_pressed(ui_state.sw_raw_pressed, i);
     }
-    // Check L -> H
-    if (!(prev_sw_raw_pressed & (1U << i)) && val > 0) {
+    // Check H -> L (push)
+    if (!(prev_sw_raw_pressed & (1U << i)) && val == 0) {
       ui_state.sw_last_event_us[i] = now_us;
     }
-    // Check H -> L
-    if ((prev_sw_raw_pressed & (1U << i)) && val == 0) {
+    // Check L -> H (release)
+    if ((prev_sw_raw_pressed & (1U << i)) && val > 0) {
       if (ui_state.sw_ignore_next & (1U << i)) {
         ui_state.sw_ignore_next &= ~(1U << i);
         continue;
@@ -113,7 +113,7 @@ void ui_handle_play_sw() {
     // Reset active transpose when sw8 is released.
     seq_state.active_transpose = 0;
   }
-  if (!(ui_state.sw_pressed & 0xFF)) return;
+  if (!(ui_state.sw_pressed & 0x3FF)) return;
   // long Play (sw9) --> stop seq.
   if (is_long_pressed(sw9)) {
     seq_state.is_playing = false;
@@ -170,7 +170,7 @@ void ui_handle_scale_edit_sw () {
     }
   }
   if (sw < NUM_SCALES) {
-    seq_config.scale = seq_scales[sw];
+    seq_config.scale = sw;
   }
 }
 
@@ -273,7 +273,7 @@ void ui_handle_vr() {
 }
 
 void ui_timer_handler(HardwareTimer *timer) {
-  uint32_t now_us = micros();
+  const uint32_t now_us = micros();
   if (now_us - ui_state.last_scan_us > UI_SCAN_INTERVAL_US) {
     ui_state.last_scan_us = now_us;
     ui_scan(now_us);

@@ -11,8 +11,8 @@
 #define sw_released(a, i) (a &= ~(1U << i))
 
 #define UI_SCAN_INTERVAL_US 1000
-#define UI_LONG_PRESS_THRESHOLD_US 10000
-#define UI_PRESS_THRESHOLD_US 500000
+#define UI_LONG_PRESS_THRESHOLD_US 300000
+#define UI_PRESS_THRESHOLD_US 30000
 
 enum {
   UI_MODE_PLAY = 0,

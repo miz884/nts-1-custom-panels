@@ -8,7 +8,8 @@ HardwareTimer *setup_timer(uint8_t pin, uint32_t overflw, void (*handler)(Hardwa
   uint32_t channel = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(pin), PinMap_PWM));
   
   HardwareTimer *timer = new HardwareTimer(Instance);
-  timer->setMode(channel, TIMER_INPUT_CAPTURE_RISING, pin);
+  // timer->setMode(channel, TIMER_INPUT_CAPTURE_RISING, pin);
+  timer->setMode(channel, TIMER_OUTPUT_COMPARE);
 
   timer->setPrescaleFactor(PRESCALER_FACTOR);
   timer->setOverflow(overflw);
