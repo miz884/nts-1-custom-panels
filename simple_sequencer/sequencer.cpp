@@ -12,7 +12,8 @@ seq_state_t seq_state = {
   .bank = 0x0,
   .step = 0x0,
   .flags = 0x0,
-  .curr_note = 0x0,
+  .curr_note = NO_NOTE,
+  .adhoc_next_note = NO_NOTE,
   .next_bank = 0xFF,
   .active_transpose = 0,
   .is_playing = false,
@@ -28,15 +29,16 @@ seq_config_t seq_config = {
 
 void seq_reset() {
   // Note off if any pending notes.
-  if (seq_state.curr_note > 0x0) {
+  if (is_valid_note(seq_state.curr_note)) {
     nts1.noteOff(seq_state.curr_note);
-    seq_state.curr_note = 0x0;
+    seq_state.curr_note = NO_NOTE;
   }
   // Init seq_state.
   seq_state.last_tick_us = 0x0;
   seq_state.ticks = 0x0;
   seq_state.bank = 0x0;
   seq_state.step = 0x0;
+  seq_state.adhoc_next_note = NO_NOTE;
   seq_state.next_bank = 0xFF;
   seq_state.active_transpose = 0;
 }
@@ -72,6 +74,52 @@ int8_t snap_to_scale(int8_t note) {
   return is_valid_note(note) ? note : NO_NOTE;
 }
 
+int8_t get_next_note() {
+  // Next step.
+  ++seq_state.step;
+  if (seq_state.step >= SEQ_NUM_STEPS) {
+    // Next bank
+    seq_state.step = 0;
+    if (seq_state.next_bank != 0xFF) {
+      // If the next bank is specified explicitly, jump to it.
+      seq_state.bank = seq_state.next_bank;
+      seq_state.next_bank = 0xFF;
+    } else {
+      // Otherwise, jump to next active bank.
+      const uint8_t prev_bank = seq_state.bank;
+      for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
+        if (seq_config.bank_active & (1U << i)) {
+          if (i < prev_bank && i < seq_state.bank) {
+            // To keep the 1st H bit for the case if the prev is the last H.
+            seq_state.bank = i;
+          }
+          if (i > prev_bank) {
+            seq_state.bank = i;
+            break;
+          }
+        }
+      }
+    }
+  }
+  // Determine the note.
+  int8_t note = seq_config.notes[seq_state.bank][seq_state.step];
+  if (is_valid_note(seq_state.adhoc_next_note)) {
+    note = seq_state.adhoc_next_note;
+    seq_state.adhoc_next_note = NO_NOTE;
+  }
+  if (!is_valid_note(note)) {
+    return NO_NOTE;
+  }
+  // Apply transposes.
+  note += seq_state.active_transpose;
+  note += seq_config.base_transpose;
+  if (!is_valid_note(note)) {
+    return NO_NOTE;
+  }
+  // Snap to scale.
+  return snap_to_scale(note);
+}
+
 void seq_timer_handler(HardwareTimer *timer) {
   const uint32_t now_us = micros();
   if (seq_state.flags & SEQ_FLAG_RESET) {
@@ -95,49 +143,13 @@ void seq_timer_handler(HardwareTimer *timer) {
     if (seq_state.ticks >= SEQ_TICKS_PER_STEP) {
       // Next step
       seq_state.ticks = 0;
-      ++seq_state.step;
-      if (seq_state.step >= SEQ_NUM_STEPS) {
-        // Next bank
-        seq_state.step = 0;
-        if (seq_state.next_bank != 0xFF) {
-          // If the next bank is specified explicitly, jump to it.
-          seq_state.bank = seq_state.next_bank;
-          seq_state.next_bank = 0xFF;
-        } else {
-          // Otherwise, jump to next active bank.
-          const uint8_t prev_bank = seq_state.bank;
-          for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
-            if (seq_config.bank_active & (1U << i)) {
-              if (i < prev_bank && i < seq_state.bank) {
-                // To keep the 1st H bit for the case if the prev is the last H.
-                seq_state.bank = i;
-              }
-              if (i > prev_bank) {
-                seq_state.bank = i;
-                break;
-              }
-            }
-          }
-        }
-      }
-      int8_t note = seq_config.notes[seq_state.bank][seq_state.step];
-      if (!is_valid_note(note)) {
-        seq_state.curr_note = NO_NOTE;
-        return;
-      }
-      // Apply transposes.
-      note += seq_state.active_transpose;
-      note += seq_config.base_transpose;
-      if (!is_valid_note(note)) {
-        seq_state.curr_note = NO_NOTE;
-        return;
-      }
-      // Snap to scale.
-      note = snap_to_scale(note);
+      int8_t note = get_next_note();
       // Note on.
       if (is_valid_note(note)) {
         seq_state.curr_note = note;
         nts1.noteOn((uint8_t) note, 0x7F);
+      } else {
+        seq_state.curr_note = NO_NOTE;
       }
     } else if (seq_state.ticks >= (SEQ_TICKS_PER_STEP >> 1)) {
       // Note off at 1/2 of the step.

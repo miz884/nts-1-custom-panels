@@ -37,8 +37,8 @@ The following configurations will be stored:
 ## Play mode
 
 - VR : tempo
-- sw9 + VR : active transpose
-- sw1 - sw8 : Next bank number. After the current bank, it will jump to the designated bank (bank0 - bank7).
+- sw9 + VR : active transpose (-64 - 63)
+- sw1 - sw8 : Next bank number. After the current bank, it will jump to the designated bank (bank1 - bank8).
 - sw9 + (sw1 - sw8) : Bank on.
 - sw9 + (Long sw1 - Long sw8) : Bank off.
 - sw10 : Start playing.
@@ -46,9 +46,16 @@ The following configurations will be stored:
 
 ## Sequencer edit mode
 
+If the sequencer is not playing, the VR notes can be set to the designated steps.
+
 - VR : off, note 0 - 127
 - sw1 - sw8 : Step to set the note.
 - sw9 + (sw1 - sw8) : Bank to set the note.
+- sw10 : Next step.
+
+If the sequencer is playing, the VR note works as an adhoc note. It will sound at the next sequencer step. But they are not stored.
+
+- VR : off, note 0 - 127
 
 ## Sequencer scale select mode
 

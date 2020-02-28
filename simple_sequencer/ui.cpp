@@ -23,8 +23,8 @@ ui_state_t ui_state = {
   .curr_bank = 0x0,
   .curr_step = 0x0,
 
-  .curr_note = NO_NOTE,
-  .next_note = NO_NOTE,
+  .curr_monitor_note = NO_NOTE,
+  .next_monitor_note = NO_NOTE,
   .note_us = 0,
 };
 
@@ -60,8 +60,8 @@ void ui_init() {
   ui_state.curr_bank = 0x0;
   ui_state.curr_step = 0x0;
 
-  ui_state.curr_note = NO_NOTE;
-  ui_state.next_note = NO_NOTE;
+  ui_state.curr_monitor_note = NO_NOTE;
+  ui_state.next_monitor_note = NO_NOTE;
   ui_state.note_us = 0;
 }
 
@@ -258,8 +258,12 @@ void ui_handle_vr() {
       }
       break;
     case UI_MODE_SEQ_EDIT:
-      ui_state.next_note = 128 * val / 1023 - 1;
-      seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = ui_state.next_note;
+      ui_state.next_monitor_note = 128 * val / 1023 - 1;
+      if (seq_state.is_playing) {
+        seq_state.adhoc_next_note = ui_state.next_monitor_note;
+      } else {
+        seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = ui_state.next_monitor_note;
+      }
       break;
     case UI_MODE_SCALE_EDIT:
       // -11 - 11
@@ -296,26 +300,26 @@ void ui_handle_vr() {
   ui_state.vr_updated = false;
 }
 
-void ui_update_note(uint32_t now_us) {
-  // Note off on previous note.
-  if (is_valid_note(ui_state.curr_note) && now_us - ui_state.note_us > NOTE_DURATION_US) {
-    nts1.noteOff(ui_state.curr_note);
-    ui_state.curr_note = NO_NOTE;
+void ui_monitor_note(uint32_t now_us) {
+  // Note off on previous note if the previous note was valid,
+  // AND there will be one of the followings:
+  // - Timeout (NOTE_DURATION_US)
+  // - Or the new note is specified.
+  if (is_valid_note(ui_state.curr_monitor_note) &&
+        ((now_us - ui_state.note_us) > NOTE_DURATION_US || is_valid_note(ui_state.next_monitor_note))) {
+    if (!seq_state.is_playing) {
+      nts1.noteOff(ui_state.curr_monitor_note);
+    }
+    ui_state.curr_monitor_note = NO_NOTE;
     ui_state.note_us = 0;
   }
-  if (is_valid_note(ui_state.next_note)) {
-    // Note off on previous note.
-    if (is_valid_note(ui_state.curr_note)) {
-      nts1.noteOff(ui_state.curr_note);
-      ui_state.curr_note = NO_NOTE;
-      ui_state.note_us = 0;
-    }
+  if (is_valid_note(ui_state.next_monitor_note)) {
     if (seq_state.is_playing) {
-      ui_state.next_note = NO_NOTE;
+      ui_state.next_monitor_note = NO_NOTE;
     } else {
-      ui_state.curr_note = ui_state.next_note;
+      ui_state.curr_monitor_note = ui_state.next_monitor_note;
       ui_state.note_us = now_us;
-      nts1.noteOn(ui_state.curr_note, 0x7F);
+      nts1.noteOn(ui_state.curr_monitor_note, 0x7F);
     }
   }
 }
@@ -331,7 +335,7 @@ void ui_timer_handler(HardwareTimer *timer) {
     if (ui_state.vr_updated) {
       ui_handle_vr();
     }
-    ui_update_note(now_us);
+    ui_monitor_note(now_us);
   }
   led_update(now_us);
 }

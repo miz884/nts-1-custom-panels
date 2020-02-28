@@ -161,8 +161,8 @@ typedef struct ui_state {
   uint8_t curr_bank;
   uint8_t curr_step;
 
-  uint8_t curr_note;
-  uint8_t next_note;
+  uint8_t curr_monitor_note;
+  uint8_t next_monitor_note;
   uint32_t note_us;
 } ui_state_t;
 
