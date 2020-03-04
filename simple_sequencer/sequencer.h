@@ -34,7 +34,7 @@ extern seq_state_t seq_state;
 
 typedef struct seq_config {
   uint32_t tempo;
-  int8_t notes[SEQ_NUM_BANKS][SEQ_NUM_STEPS];
+  int8_t notes[SEQ_NUM_BANKS * SEQ_NUM_STEPS];
   uint8_t bank_active;
   uint8_t scale;
   int8_t base_transpose;

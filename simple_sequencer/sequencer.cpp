@@ -50,17 +50,15 @@ void seq_init() {
   seq_state.is_playing = false;
   // Init seq_config.
   seq_config.tempo = 1200;
-  for (uint8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
-    for (uint8_t j = 0; j < SEQ_NUM_STEPS; ++j) {
-      seq_config.notes[j][i] = 0x42; // Middle C
-    }
+  for (uint8_t i = 0; i < SEQ_NUM_STEPS * SEQ_NUM_BANKS; ++i) {
+    seq_config.notes[i] = 0x42; // Middle C
   }
   seq_config.bank_active = 1U;
   seq_config.scale = 0;
   seq_config.base_transpose = 0;
 }
 
-int8_t snap_to_scale(int8_t note) {
+int8_t seq_snap_to_scale(int8_t note) {
   // Find a enabled pitch class on the current scale.
   // Looking at the upper notes.
   uint16_t scale_mask = 0x1 << (note % 12);
@@ -74,7 +72,7 @@ int8_t snap_to_scale(int8_t note) {
   return is_valid_note(note) ? note : NO_NOTE;
 }
 
-int8_t get_next_note() {
+uint8_t seq_next_note_index() {
   // Next step.
   ++seq_state.step;
   if (seq_state.step >= SEQ_NUM_STEPS) {
@@ -101,12 +99,10 @@ int8_t get_next_note() {
       }
     }
   }
-  // Determine the note.
-  int8_t note = seq_config.notes[seq_state.bank][seq_state.step];
-  if (is_valid_note(seq_state.adhoc_next_note)) {
-    note = seq_state.adhoc_next_note;
-    seq_state.adhoc_next_note = NO_NOTE;
-  }
+  return  seq_state.bank * SEQ_NUM_STEPS + seq_state.step;
+}
+
+int8_t seq_apply_note_modifiers(int8_t note) {
   if (!is_valid_note(note)) {
     return NO_NOTE;
   }
@@ -117,7 +113,19 @@ int8_t get_next_note() {
     return NO_NOTE;
   }
   // Snap to scale.
-  return snap_to_scale(note);
+  return seq_snap_to_scale(note);
+}
+
+int8_t seq_get_next_note() {
+  if (!seq_state.is_playing) {
+    return NO_NOTE;
+  }
+  int8_t note = seq_config.notes[seq_next_note_index()];
+  if (is_valid_note(seq_state.adhoc_next_note)) {
+    note = seq_state.adhoc_next_note;
+    seq_state.adhoc_next_note = NO_NOTE;
+  }
+  return seq_apply_note_modifiers(note);
 }
 
 void seq_timer_handler(HardwareTimer *timer) {
@@ -126,10 +134,6 @@ void seq_timer_handler(HardwareTimer *timer) {
     seq_reset();
     seq_state.last_tick_us = now_us;
     seq_state.flags &= ~SEQ_FLAG_RESET;
-  }
-
-  if (!seq_state.is_playing) {
-    return;
   }
 
   // 60 (sec/min) / (tempo / 10) (step/min) / SEQ_TICKS_PER_STEP (ticks/step)
@@ -143,7 +147,7 @@ void seq_timer_handler(HardwareTimer *timer) {
     if (seq_state.ticks >= SEQ_TICKS_PER_STEP) {
       // Next step
       seq_state.ticks = 0;
-      int8_t note = get_next_note();
+      int8_t note = seq_get_next_note();
       // Note on.
       if (is_valid_note(note)) {
         seq_state.curr_note = note;

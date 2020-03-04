@@ -262,7 +262,7 @@ void ui_handle_vr() {
       if (seq_state.is_playing) {
         seq_state.adhoc_next_note = ui_state.next_monitor_note;
       } else {
-        seq_config.notes[ui_state.curr_bank][ui_state.curr_step] = ui_state.next_monitor_note;
+        seq_config.notes[ui_state.curr_bank * SEQ_NUM_STEPS + ui_state.curr_step] = ui_state.next_monitor_note;
       }
       break;
     case UI_MODE_SCALE_EDIT:
