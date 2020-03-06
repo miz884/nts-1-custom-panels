@@ -1,8 +1,8 @@
 #ifndef _SEQUENCER_H
 #define _SEQUENCER_H
 
-#include <nts-1.h>
 #include "Arduino.h"
+#include "simple_sequencer.h"
 
 #define SEQ_NUM_BANKS 8
 #define SEQ_NUM_STEPS 8
@@ -10,8 +10,6 @@
 #define NO_NOTE -1
 
 #define is_valid_note(n) (0 <= n && n < 128)
-
-extern NTS1 nts1;
 
 enum {
   SEQ_FLAG_RESET = 1U << 0,

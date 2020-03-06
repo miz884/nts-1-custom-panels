@@ -10,11 +10,11 @@
 #define sw_pressed(a, i) (a |= (1U << i))
 #define sw_released(a, i) (a &= ~(1U << i))
 
-#define UI_SCAN_INTERVAL_US 1000
+#define UI_SCAN_INTERVAL_US 5000
 #define UI_LONG_PRESS_THRESHOLD_US 300000
 #define UI_PRESS_THRESHOLD_US 30000
 
-#define NOTE_DURATION_US 500000
+#define NOTE_DURATION_US 500000 // 500 msec
 
 enum {
   UI_MODE_PLAY = 0,

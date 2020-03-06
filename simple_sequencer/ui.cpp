@@ -1,7 +1,9 @@
 #include "flash.h"
 #include "led.h"
+#include "nts1_wrapper.h"
 #include "scale.h"
 #include "sequencer.h"
+#include "simple_sequencer.h"
 #include "ui.h"
 
 ui_state_t ui_state = {
@@ -98,9 +100,15 @@ void ui_scan(const uint32_t now_us) {
   // Scan VRs.
   for (uint8_t i = 0; i < vr_count; ++i) {
     const uint32_t val = analogRead(vr_pins[i]);
-    if (val != ui_state.vr_value) {
-      ui_state.vr_value = val;
+    const int32_t new_val = 0.95 * ui_state.vr_value + 0.05 * val;
+    if (new_val != ui_state.vr_value) {
+      ui_state.vr_value = new_val;
       ui_state.vr_updated = true;
+#ifdef _SERIAL_DEBUG
+      Serial.print("vr_updated: ");
+      Serial.print(ui_state.vr_value);
+      Serial.println("");
+#endif
     }
   }
 }
@@ -146,7 +154,7 @@ void ui_handle_play_sw() {
     seq_config.bank_active &= ~(ui_state.sw_long_pressed & 0xFF);
   } else {
     // sw? --> next bank
-    for (int8_t i = 0; i < sw_count; ++i) {
+    for (int8_t i = 0; i < SEQ_NUM_BANKS; ++i) {
       if (is_pressed(i)) {
         seq_state.next_bank = i;
         break;
@@ -254,7 +262,7 @@ void ui_handle_vr() {
         seq_state.active_transpose = 127 * val / 1023 - 64;
       } else {
         // 20.0 - 320.0
-        seq_config.tempo = 200 + 3000 * val / 1023;
+        seq_config.tempo = 20 + 500 * val / 1023;
       }
       break;
     case UI_MODE_SEQ_EDIT:
@@ -266,8 +274,8 @@ void ui_handle_vr() {
       }
       break;
     case UI_MODE_SCALE_EDIT:
-      // -11 - 11
-      seq_config.base_transpose = 22 * val / 1023 - 11;
+      // -64 - 63
+      seq_config.base_transpose = 127 * val / 1023 - 64;
       break;
     case UI_MODE_SOUND_EDIT:
       uint16_t max_val = 1023U;
@@ -289,10 +297,10 @@ void ui_handle_vr() {
           break;
       }
       if (ui_state.submode == UI_SUBMODE_OSC_USER) {
-        nts1.paramChange(NTS1::PARAM_ID_OSC_EDIT,
+        nts1_wrapper_paramChange(NTS1::PARAM_ID_OSC_EDIT,
           nts1_params[ui_state.submode][ui_state.params_index], val);
       } else {
-        nts1.paramChange(nts1_params[ui_state.submode][ui_state.params_index],
+        nts1_wrapper_paramChange(nts1_params[ui_state.submode][ui_state.params_index],
           NTS1::INVALID_PARAM_SUB_ID, (uint16_t)(val / max_val));
       }
       break;
@@ -308,19 +316,18 @@ void ui_monitor_note(uint32_t now_us) {
   if (is_valid_note(ui_state.curr_monitor_note) &&
         ((now_us - ui_state.note_us) > NOTE_DURATION_US || is_valid_note(ui_state.next_monitor_note))) {
     if (!seq_state.is_playing) {
-      nts1.noteOff(ui_state.curr_monitor_note);
+      nts1_wrapper_noteOff(ui_state.curr_monitor_note);
     }
     ui_state.curr_monitor_note = NO_NOTE;
     ui_state.note_us = 0;
   }
   if (is_valid_note(ui_state.next_monitor_note)) {
-    if (seq_state.is_playing) {
-      ui_state.next_monitor_note = NO_NOTE;
-    } else {
+    if (!seq_state.is_playing) {
       ui_state.curr_monitor_note = ui_state.next_monitor_note;
       ui_state.note_us = now_us;
-      nts1.noteOn(ui_state.curr_monitor_note, 0x7F);
+      nts1_wrapper_noteOn(ui_state.curr_monitor_note, 0x7F);
     }
+    ui_state.next_monitor_note = NO_NOTE;
   }
 }
 

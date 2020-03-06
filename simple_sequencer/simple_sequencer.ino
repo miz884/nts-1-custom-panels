@@ -1,6 +1,7 @@
+#include "nts1_wrapper.h"
+#include "sequencer.h"
 #include "simple_sequencer.h"
 #include "ui.h"
-#include "sequencer.h"
 
 HardwareTimer *setup_timer(uint8_t pin, uint32_t overflw, void (*handler)(HardwareTimer *)) {
   // cf. https://github.com/stm32duino/STM32Examples/blob/master/examples/Peripherals/HardwareTimer/InputCapture/InputCapture.ino
@@ -18,18 +19,20 @@ HardwareTimer *setup_timer(uint8_t pin, uint32_t overflw, void (*handler)(Hardwa
 }
 
 void setup() {
+#ifdef _SERIAL_DEBUG
   Serial.begin(115200);
+#endif
 
   ui_init();
   seq_init();
-  nts1.init();
+  nts1_wrapper_init();
 
-  HardwareTimer *ui_timer = setup_timer(D2, 2000, ui_timer_handler);
+  HardwareTimer *ui_timer = setup_timer(D7, 2000, ui_timer_handler);
   HardwareTimer *seq_timer = setup_timer(D4, 1000, seq_timer_handler);
   ui_timer->resume();
   seq_timer->resume();
 }
 
 void loop() {
-  nts1.idle();
+  nts1_wrapper_loop();
 }

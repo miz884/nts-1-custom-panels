@@ -1,10 +1,10 @@
+#include "nts1_wrapper.h"
 #include "scale.h"
 #include "sequencer.h"
+#include "simple_sequencer.h"
 
 #define SEQ_MIN_US 60000000UL
 #define SEQ_TICKS_PER_STEP 100UL
-
-NTS1 nts1;
 
 seq_state_t seq_state = {
   .last_tick_us = 0x0,
@@ -30,7 +30,7 @@ seq_config_t seq_config = {
 void seq_reset() {
   // Note off if any pending notes.
   if (is_valid_note(seq_state.curr_note)) {
-    nts1.noteOff(seq_state.curr_note);
+    nts1_wrapper_noteOff(seq_state.curr_note);
     seq_state.curr_note = NO_NOTE;
   }
   // Init seq_state.
@@ -78,6 +78,10 @@ uint8_t seq_next_note_index() {
   if (seq_state.step >= SEQ_NUM_STEPS) {
     // Next bank
     seq_state.step = 0;
+#ifdef _SERIAL_DEBUG
+    Serial.print("next_bank: ");
+    Serial.println(seq_state.next_bank);
+#endif
     if (seq_state.next_bank != 0xFF) {
       // If the next bank is specified explicitly, jump to it.
       seq_state.bank = seq_state.next_bank;
@@ -99,7 +103,11 @@ uint8_t seq_next_note_index() {
       }
     }
   }
-  return  seq_state.bank * SEQ_NUM_STEPS + seq_state.step;
+#ifdef _SERIAL_DEBUG
+    Serial.print("note_index: ");
+    Serial.println(seq_state.bank * SEQ_NUM_STEPS + seq_state.step);
+#endif
+  return seq_state.bank * SEQ_NUM_STEPS + seq_state.step;
 }
 
 int8_t seq_apply_note_modifiers(int8_t note) {
@@ -136,9 +144,9 @@ void seq_timer_handler(HardwareTimer *timer) {
     seq_state.flags &= ~SEQ_FLAG_RESET;
   }
 
-  // 60 (sec/min) / (tempo / 10) (step/min) / SEQ_TICKS_PER_STEP (ticks/step)
-  // --> 10 * 60 / tempo / SEQ_TICKS_PER_STEP (sec/ticks)
-  const uint32_t us_per_tick = 10 * SEQ_MIN_US / (seq_config.tempo * SEQ_TICKS_PER_STEP);
+  // 60 (sec/min) / (tempo) (step/min) / SEQ_TICKS_PER_STEP (ticks/step)
+  // --> 60 / tempo / SEQ_TICKS_PER_STEP (sec/ticks)
+  const uint32_t us_per_tick = SEQ_MIN_US / (seq_config.tempo * SEQ_TICKS_PER_STEP);
   const uint32_t us_since_last_tick = now_us - seq_state.last_tick_us;
   if (us_since_last_tick >= us_per_tick) {
     // Next tick.
@@ -151,14 +159,14 @@ void seq_timer_handler(HardwareTimer *timer) {
       // Note on.
       if (is_valid_note(note)) {
         seq_state.curr_note = note;
-        nts1.noteOn((uint8_t) note, 0x7F);
+        nts1_wrapper_noteOn((uint8_t) note, 0x7F);
       } else {
         seq_state.curr_note = NO_NOTE;
       }
     } else if (seq_state.ticks >= (SEQ_TICKS_PER_STEP >> 1)) {
       // Note off at 1/2 of the step.
       if (is_valid_note(seq_state.curr_note)) {
-        nts1.noteOff(seq_state.curr_note);
+        nts1_wrapper_noteOff(seq_state.curr_note);
         seq_state.curr_note = NO_NOTE;
       }
     }
