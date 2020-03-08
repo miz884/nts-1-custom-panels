@@ -42,6 +42,10 @@ extern seq_config_t seq_config;
 
 extern void seq_init();
 
+extern void seq_start();
+
+extern void seq_stop();
+
 extern void seq_timer_handler(HardwareTimer *timer);
 
 #endif

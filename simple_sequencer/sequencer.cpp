@@ -21,7 +21,7 @@ seq_state_t seq_state = {
 
 seq_config_t seq_config = {
   .tempo = 1200,
-  .notes = { 0x42 }, // Middle C
+  .notes = { 0x3C }, // Middle C
   .bank_active = 1U,
   .scale = 0,
   .base_transpose = 0,
@@ -33,6 +33,8 @@ void seq_reset() {
     nts1_wrapper_noteOff(seq_state.curr_note);
     seq_state.curr_note = NO_NOTE;
   }
+  // All note off.
+  nts1_wrapper_all_note_off();
   // Init seq_state.
   seq_state.last_tick_us = 0x0;
   seq_state.ticks = 0x0;
@@ -51,11 +53,23 @@ void seq_init() {
   // Init seq_config.
   seq_config.tempo = 1200;
   for (uint8_t i = 0; i < SEQ_NUM_STEPS * SEQ_NUM_BANKS; ++i) {
-    seq_config.notes[i] = 0x42; // Middle C
+    seq_config.notes[i] = 0x3C; // Middle C
   }
   seq_config.bank_active = 1U;
   seq_config.scale = 0;
   seq_config.base_transpose = 0;
+}
+
+void seq_start() {
+  seq_state.is_playing = true;
+  if (!seq_state.is_playing) {
+    seq_state.flags |= SEQ_FLAG_RESET;
+  }
+}
+
+void seq_stop() {
+  seq_state.is_playing = false;
+  nts1_wrapper_all_note_off();
 }
 
 int8_t seq_snap_to_scale(int8_t note) {

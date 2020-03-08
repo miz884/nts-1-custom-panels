@@ -23,9 +23,9 @@ void setup() {
   Serial.begin(115200);
 #endif
 
+  nts1_wrapper_init();
   ui_init();
   seq_init();
-  nts1_wrapper_init();
 
   HardwareTimer *ui_timer = setup_timer(D7, 2000, ui_timer_handler);
   HardwareTimer *seq_timer = setup_timer(D4, 1000, seq_timer_handler);

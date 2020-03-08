@@ -8,23 +8,24 @@ HardwareSerial midi(USART1);
 NTS1 nts1;
 #endif
 
-#ifdef _USE_MIDI
 void nts1_wrapper_all_note_off() {
+#ifdef _USE_MIDI
   for (uint8_t note = 0; note < 128; ++note) {
     midi.write(0x80);
     midi.write(note);
     midi.write(0x00);
   }
-}
+#else
 #endif
+}
 
 void nts1_wrapper_init() {
 #ifdef _USE_MIDI
   midi.begin(31250);
   // Note off on all pitch class.
-  nts1_wrapper_all_note_off();
 #else
 #endif
+  nts1_wrapper_all_note_off();
 }
 
 void nts1_wrapper_loop() {

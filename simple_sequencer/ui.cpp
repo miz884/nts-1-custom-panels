@@ -137,13 +137,10 @@ void ui_handle_play_sw() {
   if (!(ui_state.sw_pressed & 0x3FF)) return;
   // long Play (sw9) --> stop seq.
   if (is_long_pressed(sw9)) {
-    seq_state.is_playing = false;
+    seq_stop();
   } else if (is_pressed(sw9)) {
     // Play (sw9) --> start seq.
-    if (!seq_state.is_playing) {
-      seq_state.flags |= SEQ_FLAG_RESET;
-    }
-    seq_state.is_playing = true;
+    seq_start();
   }
   // Shift (sw8) + sw? --> bank on / off
   if (is_raw_pressed(sw8)) {
