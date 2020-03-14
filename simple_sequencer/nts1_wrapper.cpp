@@ -35,6 +35,7 @@ void nts1_wrapper_loop() {
 }
 
 uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
+  uint8_t result = -1;
 #ifdef _USE_MIDI
   uint8_t msg = 0xff;
   switch (id) {
@@ -134,7 +135,8 @@ uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
     case NTS1::PARAM_ID_ARP_STATE:
     case NTS1::PARAM_ID_ARP_TEMPO:
       // Not supported in MIDI mode.
-      return 1;
+      msg = 0xff;
+      break;
   }
 #ifdef _SERIAL_DEBUG
   Serial.print("param change: ");
@@ -142,18 +144,21 @@ uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
   Serial.print(" ");
   Serial.println(value);
 #endif
-  midi.write(0xB0);
-  midi.write(msg);
-  midi.write(value);
-  return 0;
-#else
-#ifdef _ON_NTS1
-  return nts1.paramChange(id, subid, value);
+  if (msg != 0xff) {
+    midi.write(0xB0);
+    midi.write(msg);
+    midi.write(value);
+  }
+  result = 0;
 #endif
+#ifdef _USE_NTS1_SPI
+  result = nts1.paramChange(id, subid, value);
 #endif
+  return result;
 }
 
 uint8_t nts1_wrapper_noteOn(uint8_t note, uint8_t velo) {
+  uint8_t result = -1;
 #ifdef _SERIAL_DEBUG
   Serial.print("noteOn: ");
   Serial.println(note);
@@ -162,23 +167,24 @@ uint8_t nts1_wrapper_noteOn(uint8_t note, uint8_t velo) {
   midi.write(0x90);
   midi.write(note);
   midi.write(velo);
-  return 0;
-#else
-#ifdef _ON_NTS1
-  return nts1.noteOn(note, velo);
+  result = 0;
 #endif
+#ifdef _USE_NTS1_SPI
+  result = nts1.noteOn(note, velo);
 #endif
+ return result;
 }
 
 uint8_t nts1_wrapper_noteOff(uint8_t note) {
+  uint8_t result = -1;
 #ifdef _USE_MIDI
   midi.write(0x80);
   midi.write(note);
   midi.write(127);
-  return 0;
-#else
-#ifdef _ON_NTS1
-  return nts1.noteOff(note);
+  result = 0;
 #endif
+#ifdef _USE_NTS1_SPI
+  result = nts1.noteOff(note);
 #endif
+  return result;
 }
