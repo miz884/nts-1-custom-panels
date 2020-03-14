@@ -275,30 +275,25 @@ void ui_handle_vr() {
       seq_config.base_transpose = 127 * val / 1023 - 64;
       break;
     case UI_MODE_SOUND_EDIT:
-      uint16_t max_val = 1023U;
-      switch (nts1_params[ui_state.submode][ui_state.params_index]) {
-        case 0xFF:
-          return;
-        case NTS1::PARAM_ID_AMPEG_TYPE:
-          max_val = 4;
-          break;
-        case NTS1::PARAM_ID_OSC_TYPE:
-        case NTS1::PARAM_ID_MOD_TYPE:
-          // Default 4 + User 16 = 20. 0 = Off
-          max_val = 20;
-          break;
-        case NTS1::PARAM_ID_DEL_TYPE:
-        case NTS1::PARAM_ID_REV_TYPE:
-          // Default 5 + User 8 = 13. 0 = Off
-          max_val = 13;
-          break;
+#ifdef _USE_MIDI
+      const uint16_t max_val = 128U;
+#else
+      const uint16_t max_val = 1024U;
+#endif
+      if (nts1_params[ui_state.submode][ui_state.params_index] == 0xFF) {
+        return;
       }
+      // As for NTS1::*_TYPE parameters, we don't need to adjust their range.
+      // Their value range will be 0-127 regardless of the number of types.
+      // It divides the range based on the number of types internally.
+      // e.g. If there are 4 types, 0-31 is assigned to 0, 32-63 to 1,
+      // ..., and 96-127 is assigned to 3.
       if (ui_state.submode == UI_SUBMODE_OSC_USER) {
         nts1_wrapper_paramChange(NTS1::PARAM_ID_OSC_EDIT,
           nts1_params[ui_state.submode][ui_state.params_index], val);
       } else {
         nts1_wrapper_paramChange(nts1_params[ui_state.submode][ui_state.params_index],
-          NTS1::INVALID_PARAM_SUB_ID, (uint16_t)(val / max_val));
+          NTS1::INVALID_PARAM_SUBID, (uint16_t)(max_val * val / 1023U));
       }
       break;
   }

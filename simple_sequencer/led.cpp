@@ -90,7 +90,7 @@ void led_update(const uint32_t now_us) {
       // Params --> Blink
       // Dim for available submodes.
       led_update_internal(now_us, (1U << ui_state.submode),
-        0x7F, (1U << ui_state.params_index));
+        0xFF, (1U << ui_state.params_index));
     } else {
       // Submode --> ON
       // Params --> Blink

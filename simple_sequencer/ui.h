@@ -32,6 +32,7 @@ enum {
   UI_SUBMODE_MOD,
   UI_SUBMODE_DELAY,
   UI_SUBMODE_REVERB,
+  UI_SUBMODE_ARPEGGIATOR,
   ui_submode_count
 };
 
@@ -135,11 +136,21 @@ const uint8_t nts1_params[ui_submode_count][8] = {{
     0xFF,
     0xFF,
     0xFF,
+  } , {
+    // For UI_SUBMODE_ARPEGGIATOR
+    NTS1::PARAM_ID_ARP_PATTERN,
+    NTS1::PARAM_ID_ARP_INTERVALS,
+    NTS1::PARAM_ID_ARP_LENGTH,
+    NTS1::PARAM_ID_ARP_STATE,
+    NTS1::PARAM_ID_ARP_TEMPO,
+    0xFF,
+    0xFF,
+    0xFF,
   }
 };
 
 const uint8_t ui_submode_leds[ui_submode_count] = {
-  0x37, 0x77, 0x37, 0x37, 0x07, 0x0f, 0x0f
+  0x37, 0x77, 0x37, 0x37, 0x07, 0x0f, 0x0f, 0x1f
 };
 
 typedef struct ui_state {
