@@ -104,11 +104,6 @@ void ui_scan(const uint32_t now_us) {
     if (new_val != ui_state.vr_value) {
       ui_state.vr_value = new_val;
       ui_state.vr_updated = true;
-#ifdef _SERIAL_DEBUG
-      Serial.print("vr_updated: ");
-      Serial.print(ui_state.vr_value);
-      Serial.println("");
-#endif
     }
   }
 }

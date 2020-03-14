@@ -92,10 +92,6 @@ uint8_t seq_next_note_index() {
   if (seq_state.step >= SEQ_NUM_STEPS) {
     // Next bank
     seq_state.step = 0;
-#ifdef _SERIAL_DEBUG
-    Serial.print("next_bank: ");
-    Serial.println(seq_state.next_bank);
-#endif
     if (seq_state.next_bank != 0xFF) {
       // If the next bank is specified explicitly, jump to it.
       seq_state.bank = seq_state.next_bank;
@@ -117,10 +113,6 @@ uint8_t seq_next_note_index() {
       }
     }
   }
-#ifdef _SERIAL_DEBUG
-    Serial.print("note_index: ");
-    Serial.println(seq_state.bank * SEQ_NUM_STEPS + seq_state.step);
-#endif
   return seq_state.bank * SEQ_NUM_STEPS + seq_state.step;
 }
 

@@ -10,29 +10,27 @@ HardwareSerial midi(USART1);
 NTS1 nts1;
 
 void nts1_wrapper_all_note_off() {
-#ifdef _USE_MIDI
   for (uint8_t note = 0; note < 128; ++note) {
-    midi.write(0x80);
-    midi.write(note);
-    midi.write(0x00);
+    nts1_wrapper_noteOff(note);
   }
-#else
-#endif
 }
 
 void nts1_wrapper_init() {
+#ifdef _ON_NTS1
+  nts1.init();
+#endif
 #ifdef _USE_MIDI
   midi.begin(31250);
-#else
 #endif
   // Note off on all pitch class.
   nts1_wrapper_all_note_off();
 }
 
 void nts1_wrapper_loop() {
-#ifdef _USE_MIDI
-#else
+#ifdef _ON_NTS1
   nts1.idle();
+#endif
+#ifdef _USE_MIDI
 #endif
 }
 
@@ -149,7 +147,9 @@ uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
   midi.write(value);
   return 0;
 #else
+#ifdef _ON_NTS1
   return nts1.paramChange(id, subid, value);
+#endif
 #endif
 }
 
@@ -164,7 +164,9 @@ uint8_t nts1_wrapper_noteOn(uint8_t note, uint8_t velo) {
   midi.write(velo);
   return 0;
 #else
+#ifdef _ON_NTS1
   return nts1.noteOn(note, velo);
+#endif
 #endif
 }
 
@@ -175,6 +177,8 @@ uint8_t nts1_wrapper_noteOff(uint8_t note) {
   midi.write(127);
   return 0;
 #else
+#ifdef _ON_NTS1
   return nts1.noteOff(note);
+#endif
 #endif
 }
