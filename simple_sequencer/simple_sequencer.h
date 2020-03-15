@@ -11,7 +11,7 @@
 // 0: MIDI
 // 1: NTS1 SPI
 // 2: MIDI + NTS1 SPI
-#define _SEQ_DEVICE 2
+#define _SEQ_DEVICE 1
 
 #if _SEQ_DEVICE == 0
   #define _USE_MIDI

@@ -38,6 +38,7 @@ uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
   uint8_t result = -1;
 #ifdef _USE_MIDI
   uint8_t msg = 0xff;
+  max_value = 127U;
   switch (id) {
     case NTS1::PARAM_ID_OSC_TYPE:
       msg = 53;
@@ -142,17 +143,33 @@ uint8_t nts1_wrapper_paramChange(uint8_t id, uint8_t subid, uint16_t value) {
   Serial.print("param change: ");
   Serial.print(msg);
   Serial.print(" ");
-  Serial.println(value);
+  Serial.println((uint16_t) 127U * value / 1023U);
 #endif
   if (msg != 0xff) {
     midi.write(0xB0);
     midi.write(msg);
-    midi.write(value);
+    midi.write((uint16_t) 127U * value / 1023U);
   }
   result = 0;
 #endif
 #ifdef _USE_NTS1_SPI
-  result = nts1.paramChange(id, subid, value);
+  uint16_t max_value = 1023U;
+  switch(id) {
+    case NTS1::PARAM_ID_AMPEG_TYPE:
+      max_value = 4;
+      break;
+    case NTS1::PARAM_ID_OSC_TYPE:
+    case NTS1::PARAM_ID_MOD_TYPE:
+     // Default 4 + User 16 = 20. 0 = Off
+      max_value = 20;
+      break;
+    case NTS1::PARAM_ID_DEL_TYPE:
+    case NTS1::PARAM_ID_REV_TYPE:
+      // Default 5 + User 8 = 13. 0 = Off
+      max_value = 13;
+      break;
+  }
+  result = nts1.paramChange(id, subid, (uint16_t) max_value * value / 1023U);
 #endif
   return result;
 }

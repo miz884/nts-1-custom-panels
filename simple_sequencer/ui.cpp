@@ -288,7 +288,7 @@ void ui_handle_vr() {
           nts1_params[ui_state.submode][ui_state.params_index], val);
       } else {
         nts1_wrapper_paramChange(nts1_params[ui_state.submode][ui_state.params_index],
-          NTS1::INVALID_PARAM_SUBID, (uint16_t)(max_val * val / 1023U));
+          NTS1::INVALID_PARAM_SUBID, val);
       }
       break;
   }
